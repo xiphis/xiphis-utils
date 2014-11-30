@@ -20,107 +20,49 @@ import java.util.LinkedList;
  * @author atcurtis
  * @since 2014-11-17
  */
-public abstract class VarBase<Type, VarType extends VarBase<Type, VarType>> implements VarItem
+public interface VarBase<Type, VarType extends VarBase<Type, VarType>> extends VarItem
 {
-  private long _lastModified;
-  private long _lastReadTime;
-  private VarListener<VarType> _listeners;
-  private final boolean _readonly;
-
-  protected VarBase(Builder<?, Type, VarType> builder)
+  default boolean isReadOnly()
   {
-    _readonly = builder._readonly;
-  }
-
-  public boolean isReadOnly()
-  {
-    return _readonly;
+    return true;
   }
 
   @SuppressWarnings("unchecked")
-  protected VarType self()
+  default VarType self()
   {
     return (VarType) this;
   }
 
-  public VarBase<?,?> asVarBase()
+  default VarBase<?,?> asVarBase()
   {
     return this;
   }
 
-  public abstract void setStringValue(String value);
-
-  public void setValue(String value)
+  @Override
+  @SuppressWarnings("unchecked")
+  default  <Item extends VarItem> Item cast(VarItem existing)
   {
-    if (_readonly)
+    if (existing.getClass() == getClass())
+      return (Item) existing;
+    throw new ClassCastException();
+  }
+
+  void setStringValue(String value);
+
+  default void setValue(String value)
+  {
+    if (isReadOnly())
       throw new IllegalAccessError("read only");
     setStringValue(value);
   }
 
-  private static class Listeners<VarType extends VarBase<?, VarType>>
-      extends LinkedList<VarListener<VarType>> implements VarListener<VarType>
-  {
-    private final VarType _self;
+  void addListener(VarListener<Type, VarType> listener);
 
-    private Listeners(VarType self, VarListener<VarType> a, VarListener<VarType> b)
-    {
-      _self = self;
-      add(a);
-      add(b);
-    }
+  void removeListener(VarListener<Type, VarType> listener);
 
-    @Override
-    public void onUpdate(VarType var)
-    {
-      forEach(listener -> listener.onUpdate(_self));
-    }
-  }
+  Type getValue();
 
-  public synchronized void addListener(VarListener<VarType> listener)
-  {
-    if (_listeners == null)
-      _listeners = listener;
-    else
-    if (_listeners instanceof Listeners)
-      ((Listeners<VarType>) _listeners).add(listener);
-    else
-      _listeners = new Listeners<VarType>(self(), _listeners, listener);
-  }
-
-  public synchronized void removeListener(VarListener<VarType> listener)
-  {
-    if (_listeners instanceof Listeners)
-      ((Listeners) _listeners).remove(listener);
-    else
-    if (_listeners == listener)
-      _listeners = null;
-  }
-
-  @SuppressWarnings("unchecked")
-  protected void fireOnUpdate()
-  {
-    VarListener<VarType> listeners = _listeners;
-    if (listeners != null)
-      listeners.onUpdate((VarType) this);
-  }
-
-  protected void update()
-  {
-    long now = System.currentTimeMillis();
-    if (now <= _lastReadTime)
-      _lastModified = _lastReadTime + 1;
-    else
-      _lastModified = now;
-    fireOnUpdate();
-  }
-
-  public abstract Type getValue();
-
-  public synchronized Pair<Type, Long> getValueAndTimestamp()
-  {
-    _lastReadTime = System.currentTimeMillis();
-    return Pair.make(getValue(), _lastModified);
-  }
+  Pair<Type, Long> getValueAndTimestamp();
 
   public static abstract class Builder<B extends Builder<B, Type, VarType>, Type, VarType extends VarBase<Type, VarType>>
   {
@@ -148,6 +90,11 @@ public abstract class VarBase<Type, VarType extends VarBase<Type, VarType>> impl
       return self();
     }
 
+    public boolean isReadOnly()
+    {
+      return _readonly;
+    }
+
     public VarType build()
     {
       VarType var = buildVar();
@@ -167,5 +114,86 @@ public abstract class VarBase<Type, VarType extends VarBase<Type, VarType>> impl
     }
 
     protected abstract VarType buildVar();
+  }
+
+  public static class Attributes<Type, VarType extends VarBase<Type, VarType>>
+  {
+    private final VarType _var;
+    private final boolean _readonly;
+    private long _lastModified;
+    private long _lastReadTime;
+    private VarListener<Type, VarType> _listeners;
+
+    public Attributes(VarType var, boolean readonly)
+    {
+      _var = var;
+      _readonly = readonly;
+    }
+
+    public boolean isReadOnly()
+    {
+      return _readonly;
+    }
+
+    public synchronized Pair<Type, Long> getValueAndTimestamp()
+    {
+      _lastReadTime = System.currentTimeMillis();
+      return Pair.make(_var.getValue(), _lastModified);
+    }
+
+
+    private static class Listeners<Type, VarType extends VarBase<Type, VarType>>
+        extends LinkedList<VarListener<Type, VarType>> implements VarListener<Type, VarType>
+    {
+      private Listeners(VarListener<Type, VarType> a, VarListener<Type, VarType> b)
+      {
+        add(a);
+        add(b);
+      }
+
+      @Override
+      public void onUpdate(VarType var, Type value)
+      {
+        forEach(listener -> listener.onUpdate(var, value));
+      }
+    }
+
+    public synchronized void addListener(VarListener<Type, VarType> listener)
+    {
+      if (_listeners == null)
+        _listeners = listener;
+      else
+      if (_listeners instanceof Listeners)
+        ((Listeners<Type, VarType>) _listeners).add(listener);
+      else
+        _listeners = new Listeners<Type, VarType>(_listeners, listener);
+    }
+
+    public synchronized void removeListener(VarListener<Type, VarType> listener)
+    {
+      if (_listeners instanceof Listeners)
+        ((Listeners) _listeners).remove(listener);
+      else
+      if (_listeners == listener)
+        _listeners = null;
+    }
+
+    @SuppressWarnings("unchecked")
+    public void fireOnUpdate(Type value)
+    {
+      VarListener<Type, VarType> listeners = _listeners;
+      if (listeners != null)
+        listeners.onUpdate((VarType) this, value);
+    }
+
+    public void update(Type value)
+    {
+      long now = System.currentTimeMillis();
+      if (now <= _lastReadTime)
+        _lastModified = _lastReadTime + 1;
+      else
+        _lastModified = now;
+      fireOnUpdate(value);
+    }
   }
 }

@@ -13,6 +13,7 @@
 package org.xiphis.utils.app;
 
 import io.netty.util.concurrent.Promise;
+import org.xiphis.utils.common.ConcurrentIdentityHashMap;
 
 import java.util.IdentityHashMap;
 import java.util.NoSuchElementException;
@@ -24,7 +25,7 @@ import java.util.NoSuchElementException;
 public abstract class AbstractModule implements Module
 {
   private final Registry<?> _registry;
-  private final IdentityHashMap<Class<? extends Module>, Module> _depends;
+  private final ConcurrentIdentityHashMap<Class<? extends Module>, Module> _depends;
 
   /**
    *
@@ -32,8 +33,10 @@ public abstract class AbstractModule implements Module
    */
   protected AbstractModule(Registry<?> registry)
   {
+    if (registry == null)
+      throw new NullPointerException();
     _registry = registry;
-    _depends = new IdentityHashMap<>();
+    _depends = new ConcurrentIdentityHashMap<>();
   }
 
   /**
@@ -64,20 +67,15 @@ public abstract class AbstractModule implements Module
       throws ClassNotFoundException
   {
     M module;
-    synchronized (_depends)
-    {
-      if ((module = moduleClass.cast(_depends.get(moduleClass))) != null)
-        return module;
-    }
+    if ((module = moduleClass.cast(_depends.get(moduleClass))) != null)
+      return module;
     for (Class<? extends Module> depend : Registry.getDependencies(moduleClass))
     {
       if (depend == moduleClass)
       {
         module = _registry.getModule(moduleClass).syncUninterruptibly().getNow();
-        synchronized (_depends)
-        {
-          _depends.put(moduleClass, module);
-        }
+        Module existing = _depends.putIfAbsent(moduleClass, module);
+        assert existing == null || existing == module;
         return module;
       }
     }

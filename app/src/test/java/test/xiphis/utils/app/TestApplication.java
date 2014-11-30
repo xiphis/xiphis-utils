@@ -13,6 +13,7 @@
 package test.xiphis.utils.app;
 
 import io.netty.util.concurrent.Promise;
+import org.apache.log4j.BasicConfigurator;
 import org.junit.Assert;
 import org.junit.Test;
 import org.xiphis.utils.app.Application;
@@ -32,6 +33,12 @@ import java.nio.charset.Charset;
  */
 public class TestApplication
 {
+  static
+  {
+    BasicConfigurator.resetConfiguration();
+    BasicConfigurator.configure();
+  }
+
   public static class AppModule0 implements MainModule
   {
     @CLIShortName('v')

@@ -18,29 +18,30 @@ import org.xiphis.utils.common.Utils;
 
 import java.text.Format;
 import java.text.MessageFormat;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author atcurtis
- * @since 2014-11-17
+ * @since 2014-11-28
  */
-public class Var<Type> implements VarBase<Type, Var<Type>>
+public class VarAtomic<Type> implements VarBase<Type, VarAtomic<Type>>
 {
-  private final Attributes<Type, Var<Type>> _attr;
+  private final Attributes<Type, VarAtomic<Type>> _attr;
   private final Class<Type> _type;
   private final Format _format;
-  private Type _value;
+  private final AtomicReference<Type> _value;
 
-  protected Var(Builder<Type> builder)
+  protected VarAtomic(Builder<Type> builder)
   {
     _attr = new Attributes<>(self(), builder.isReadOnly());
     _type = builder._type;
     _format = builder._format;
-    _value = builder._value;
+    _value = new AtomicReference<>(builder._value);
   }
 
-  private static class VarSetable<Type> extends Var<Type> implements Setable<Type>
+  private static class VarSetable<Type> extends VarAtomic<Type> implements Setable<Type>
   {
-    protected VarSetable(Var.Builder<Type> builder)
+    protected VarSetable(VarAtomic.Builder<Type> builder)
     {
       super(builder);
     }
@@ -50,15 +51,15 @@ public class Var<Type> implements VarBase<Type, Var<Type>>
   @SuppressWarnings("unchecked")
   public <Item extends VarItem> Item cast(VarItem existing)
   {
-    if (existing instanceof Var)
+    if (existing instanceof VarAtomic)
     {
-      if (((Var) existing)._type.equals(_type))
+      if (((VarAtomic) existing)._type.equals(_type))
         return (Item) existing;
     }
     throw new ClassCastException();
   }
 
-  public static class Builder<Type> extends VarBase.Builder<Builder<Type>, Type, Var<Type>>
+  public static class Builder<Type> extends VarBase.Builder<Builder<Type>, Type, VarAtomic<Type>>
   {
     private final Class<Type> _type;
     private Format _format;
@@ -95,9 +96,9 @@ public class Var<Type> implements VarBase<Type, Var<Type>>
     }
 
     @Override
-    protected Var<Type> buildVar()
+    protected VarAtomic<Type> buildVar()
     {
-      return !_setable ? new Var<>(this) : new VarSetable<>(this);
+      return !_setable ? new VarAtomic<>(this) : new VarSetable<>(this);
     }
   }
 
@@ -111,18 +112,25 @@ public class Var<Type> implements VarBase<Type, Var<Type>>
     return new Builder<>(base, path, type);
   }
 
-
-  public synchronized void set(Type value)
+  public final void set(Type value)
   {
-    if (_value == value)
-      return;
-    _value = value;
-    _attr.update(value);
+    if (_value.getAndSet(value) != value)
+      _attr.update(value);
   }
 
-  public Type get()
+  public final boolean compareAndSet(Type expect, Type value)
   {
-    return _value;
+    if (_value.compareAndSet(expect, value))
+    {
+      _attr.update(value);
+      return true;
+    }
+    return false;
+  }
+
+  public final Type get()
+  {
+    return _value.get();
   }
 
   public void setValue(Type value)
@@ -144,13 +152,13 @@ public class Var<Type> implements VarBase<Type, Var<Type>>
   }
 
   @Override
-  public void addListener(VarListener<Type, Var<Type>> listener)
+  public void addListener(VarListener<Type, VarAtomic<Type>> listener)
   {
     _attr.addListener(listener);
   }
 
   @Override
-  public void removeListener(VarListener<Type, Var<Type>> listener)
+  public void removeListener(VarListener<Type, VarAtomic<Type>> listener)
   {
     _attr.removeListener(listener);
   }
@@ -172,4 +180,5 @@ public class Var<Type> implements VarBase<Type, Var<Type>>
   {
     return String.valueOf(get());
   }
+
 }

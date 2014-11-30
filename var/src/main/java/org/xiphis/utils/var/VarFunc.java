@@ -12,19 +12,22 @@
 
 package org.xiphis.utils.var;
 
+import org.xiphis.utils.common.Pair;
+
 import java.util.concurrent.Callable;
 
 /**
  * @author atcurtis
  * @since 2014-11-20
  */
-public class VarFunc<Type> extends VarBase<Type, VarFunc<Type>>
+public class VarFunc<Type> implements VarBase<Type, VarFunc<Type>>
 {
   private final Callable<Type> _value;
 
   protected VarFunc(Builder<Type> builder)
   {
-    super(builder);
+    if (builder._value == null)
+      throw new NullPointerException();
     _value = builder._value;
   }
 
@@ -42,19 +45,13 @@ public class VarFunc<Type> extends VarBase<Type, VarFunc<Type>>
 
   public static class Builder<Type> extends VarBase.Builder<Builder<Type>, Type, VarFunc<Type>>
   {
-    private final Callable<Type> _value;
+    private Callable<Type> _value;
 
-    private Builder(VarGroup base, String path, Callable<Type> value)
+    private Builder(VarGroup base, String path, Callable<Type> callable)
     {
       super(base, path);
-      _value = value;
+      _value = callable;
       readonly();
-    }
-
-    @Override
-    public VarFunc<Type> build()
-    {
-      return super.build();
     }
 
     @Override
@@ -64,14 +61,16 @@ public class VarFunc<Type> extends VarBase<Type, VarFunc<Type>>
     }
   }
 
-  public static <Type> Builder builder(String path, Callable<Type> value)
+  public static <Type> Builder<Type> builder(String path, Callable<Type> callable)
   {
-    return builder(VarGroup.ROOT, path, value);
+    return builder(VarGroup.ROOT, path, callable);
   }
 
-  public static <Type> Builder builder(VarGroup base, String path, Callable<Type> value)
+  public static <Type> Builder<Type> builder(VarGroup base, String path, Callable<Type> callable)
   {
-    return new Builder<>(base, path, value);
+    if (callable == null)
+      throw new NullPointerException();
+    return new Builder<>(base, path, callable);
   }
 
   public Type get()
@@ -93,9 +92,25 @@ public class VarFunc<Type> extends VarBase<Type, VarFunc<Type>>
   }
 
   @Override
+  public void addListener(VarListener<Type, VarFunc<Type>> listener)
+  {
+  }
+
+  @Override
+  public void removeListener(VarListener<Type, VarFunc<Type>> listener)
+  {
+  }
+
+  @Override
   public Type getValue()
   {
     return get();
+  }
+
+  @Override
+  public Pair<Type, Long> getValueAndTimestamp()
+  {
+    return Pair.make(getValue(), System.currentTimeMillis());
   }
 
   @Override

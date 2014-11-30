@@ -14,18 +14,20 @@ package org.xiphis.utils.var;
 
 import org.xiphis.utils.common.Pair;
 
+import java.util.concurrent.Callable;
+
 /**
  * @author atcurtis
- * @since 2014-11-20
+ * @since 2014-11-28
  */
-public class VarConst<Type> implements VarBase<Type, VarConst<Type>>
+public class VarFuncNumber<Type extends Number> implements VarBase<Type, VarFuncNumber<Type>>
 {
-  private final Long _timestamp;
-  private final Type _value;
+  private final Callable<Type> _value;
 
-  protected VarConst(Builder<Type> builder)
+  protected VarFuncNumber(Builder<Type> builder)
   {
-    _timestamp = System.currentTimeMillis();
+    if (builder._value == null)
+      throw new NullPointerException();
     _value = builder._value;
   }
 
@@ -33,60 +35,69 @@ public class VarConst<Type> implements VarBase<Type, VarConst<Type>>
   @SuppressWarnings("unchecked")
   public <Item extends VarItem> Item cast(VarItem existing)
   {
-    if (existing instanceof VarConst)
+    if (existing instanceof VarFuncNumber)
     {
-      if (((VarConst) existing)._value.equals(_value))
+      if (((VarFuncNumber) existing)._value.getClass() == _value.getClass())
         return (Item) existing;
     }
     throw new ClassCastException();
   }
 
-  public static class Builder<Type> extends VarBase.Builder<Builder<Type>, Type, VarConst<Type>>
+  public static class Builder<Type extends Number> extends VarBase.Builder<Builder<Type>, Type, VarFuncNumber<Type>>
   {
-    private final Type _value;
+    private Callable<Type> _value;
 
-    private Builder(VarGroup base, String path, Type value)
+    private Builder(VarGroup base, String path, Callable<Type> value)
     {
       super(base, path);
-      _value = value;
       readonly();
+      _value = value;
     }
 
     @Override
-    protected VarConst<Type> buildVar()
+    protected VarFuncNumber<Type> buildVar()
     {
-      return new VarConst<>(this);
+      return new VarFuncNumber<>(this);
     }
   }
 
-  public static <Type> Builder<Type> builder(String path, Type value)
+  public static <Type extends Number> Builder<Type> builder(String path, Callable<Type> callable)
   {
-    return builder(VarGroup.ROOT, path, value);
+    return builder(VarGroup.ROOT, path, callable);
   }
 
-  public static <Type> Builder<Type> builder(VarGroup base, String path, Type value)
+  public static <Type extends Number> Builder<Type> builder(VarGroup base, String path, Callable<Type> callable)
   {
-    return new Builder<>(base, path, value);
+    if (callable == null)
+      throw new NullPointerException();
+    return new Builder<>(base, path, callable);
   }
 
   public Type get()
   {
-    return _value;
+    try
+    {
+      return _value.call();
+    }
+    catch (Exception e)
+    {
+      return null;
+    }
   }
 
   @Override
   public void setStringValue(String value)
   {
-    throw new IllegalArgumentException("const");
+    throw new IllegalArgumentException("func");
   }
 
   @Override
-  public void addListener(VarListener<Type, VarConst<Type>> listener)
+  public void addListener(VarListener<Type, VarFuncNumber<Type>> listener)
   {
   }
 
   @Override
-  public void removeListener(VarListener<Type, VarConst<Type>> listener)
+  public void removeListener(VarListener<Type, VarFuncNumber<Type>> listener)
   {
   }
 
@@ -99,7 +110,7 @@ public class VarConst<Type> implements VarBase<Type, VarConst<Type>>
   @Override
   public Pair<Type, Long> getValueAndTimestamp()
   {
-    return Pair.make(getValue(), _timestamp);
+    return Pair.make(getValue(), System.currentTimeMillis());
   }
 
   @Override
@@ -107,4 +118,5 @@ public class VarConst<Type> implements VarBase<Type, VarConst<Type>>
   {
     return String.valueOf(get());
   }
+
 }

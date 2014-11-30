@@ -14,9 +14,8 @@ package org.xiphis.utils.app;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xiphis.utils.common.ConcurrentIdentityHashMap;
+import org.xiphis.utils.common.Logger;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -36,7 +35,7 @@ import static java.lang.String.format;
 public class ModuleInfo<M extends Module>
 {
   private final static Runnable NOP = () -> { };
-  private final Logger LOG = LoggerFactory.getLogger(getClass());
+  private final Logger LOG = Logger.getInstance(getClass());
 
   private final Class<M> _moduleClass;
   private final Class<? extends M> _implementationClass;

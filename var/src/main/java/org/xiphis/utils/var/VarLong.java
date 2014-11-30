@@ -13,6 +13,7 @@
 package org.xiphis.utils.var;
 
 import org.xiphis.utils.common.IntegerFormat;
+import org.xiphis.utils.common.Pair;
 import org.xiphis.utils.common.Setable;
 
 /**
@@ -37,15 +38,6 @@ public class VarLong extends VarNumber<Long, VarLong>
     {
       super(builder);
     }
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public <Item extends VarItem> Item cast(VarItem existing)
-  {
-    if (existing instanceof VarLong)
-      return (Item) existing;
-    throw new ClassCastException();
   }
 
   public static class Builder extends VarNumber.Builder<Builder, Long, VarLong>
@@ -126,7 +118,7 @@ public class VarLong extends VarNumber<Long, VarLong>
         (_maxValue != null && _maxValue < value))
       throw new IllegalArgumentException(String.format("minValue[%s] <= %d <= maxValue[%s]", _minValue, value, _maxValue));
     _value = value;
-    update();
+    _attr.update(value);
   }
 
   public long get()

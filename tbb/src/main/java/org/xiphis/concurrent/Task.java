@@ -15,10 +15,9 @@ package org.xiphis.concurrent;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.SingleThreadEventExecutor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xiphis.utils.common.ConcurrentIdentityHashMap;
 import org.xiphis.utils.common.Factory;
+import org.xiphis.utils.common.Logger;
 import org.xiphis.utils.common.Utils;
 
 import java.lang.ref.PhantomReference;
@@ -119,7 +118,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public abstract class Task
 {
-  private static final Logger LOG = LoggerFactory.getLogger(Task.class);
+  private static final Logger LOG = Logger.getInstance(Task.class);
 
   private static class Prefix
   {

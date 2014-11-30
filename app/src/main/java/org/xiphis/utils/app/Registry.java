@@ -15,11 +15,10 @@ package org.xiphis.utils.app;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xiphis.utils.common.ConcurrentIdentityHashMap;
 import org.xiphis.utils.common.Configure;
 import org.xiphis.utils.common.Filter;
+import org.xiphis.utils.common.Logger;
 import org.xiphis.utils.common.Utils;
 
 import java.lang.reflect.Modifier;
@@ -42,7 +41,7 @@ import static java.lang.String.format;
  */
 public class Registry<Config extends Configure>
 {
-  private final Logger LOG = LoggerFactory.getLogger(getClass());
+  private final Logger LOG = Logger.getInstance(getClass());
 
   /**
    * Wrapper around {@link #getDependencies(Class)}.
@@ -56,7 +55,7 @@ public class Registry<Config extends Configure>
       }
       catch (ClassNotFoundException ex)
       {
-        LoggerFactory.getLogger(Registry.class).error("Dependency failure", ex);
+        Logger.getInstance(Registry.class).error("Dependency failure", ex);
       }
     }
     return Collections.emptyList();

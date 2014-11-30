@@ -10,13 +10,31 @@
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.xiphis.utils.var;
+package org.xiphis.utils.common;
+
+import io.netty.util.internal.logging.InternalLogLevel;
 
 /**
  * @author atcurtis
- * @since 2014-11-17
+ * @since 2014-11-30
  */
-public interface VarListener<Type, VarType extends VarBase<Type, VarType>>
+public enum LogLevel
 {
-  void onUpdate(VarType var, Type value);
+  TRACE(InternalLogLevel.TRACE),
+  DEBUG(InternalLogLevel.DEBUG),
+  INFO(InternalLogLevel.INFO),
+  WARN(InternalLogLevel.WARN),
+  ERROR(InternalLogLevel.ERROR);
+
+  private final InternalLogLevel internalLevel;
+
+  private LogLevel(InternalLogLevel internalLevel)
+  {
+    this.internalLevel = internalLevel;
+  }
+
+  InternalLogLevel toInternalLevel()
+  {
+    return internalLevel;
+  }
 }

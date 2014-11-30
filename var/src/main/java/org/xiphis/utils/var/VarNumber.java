@@ -12,19 +12,22 @@
 
 package org.xiphis.utils.var;
 
+import org.xiphis.utils.common.Pair;
+
 /**
  * @author atcurtis
  * @since 2014-11-17
  */
 public abstract class VarNumber<Type extends Number, VarType extends VarNumber<Type, VarType>>
-    extends VarBase<Type, VarType>
+    extends Number implements VarBase<Type, VarType>
 {
+  protected final Attributes<Type, VarType> _attr;
   protected final Type _minValue;
   protected final Type _maxValue;
 
   protected VarNumber(Builder<?, Type, VarType> builder)
   {
-    super(builder);
+    _attr = new Attributes<Type, VarType>(self(), builder.isReadOnly());
     _minValue = builder._minValue;
     _maxValue = builder._maxValue;
   }
@@ -51,5 +54,70 @@ public abstract class VarNumber<Type extends Number, VarType extends VarNumber<T
       _maxValue = maxValue;
       return self();
     }
+  }
+
+  @Override
+  public Pair<Type, Long> getValueAndTimestamp()
+  {
+    return _attr.getValueAndTimestamp();
+  }
+
+  @Override
+  public boolean isReadOnly()
+  {
+    return _attr.isReadOnly();
+  }
+
+  @Override
+  public void addListener(VarListener<Type, VarType> listener)
+  {
+    _attr.addListener(listener);
+  }
+
+  @Override
+  public void removeListener(VarListener<Type, VarType> listener)
+  {
+    _attr.removeListener(listener);
+  }
+
+  protected Number getNumber()
+  {
+    return getValue();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public int intValue()
+  {
+    return getNumber().intValue();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public long longValue()
+  {
+    return getNumber().longValue();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public float floatValue()
+  {
+    return getNumber().floatValue();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public double doubleValue()
+  {
+    return getNumber().doubleValue();
   }
 }

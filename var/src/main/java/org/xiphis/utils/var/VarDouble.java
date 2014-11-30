@@ -36,15 +36,6 @@ public class VarDouble extends VarNumber<Double, VarDouble>
     }
   }
 
-  @Override
-  @SuppressWarnings("unchecked")
-  public <Item extends VarItem> Item cast(VarItem existing)
-  {
-    if (existing.getClass() == getClass())
-      return (Item) existing;
-    throw new ClassCastException();
-  }
-
   public static class Builder extends VarNumber.Builder<Builder, Double, VarDouble>
   {
     private double _value;
@@ -92,7 +83,7 @@ public class VarDouble extends VarNumber<Double, VarDouble>
         (_maxValue != null && _maxValue < value))
       throw new IllegalArgumentException(String.format("minValue[%s] <= %f <= maxValue[%s]", _minValue, value, _maxValue));
     _value = value;
-    update();
+    _attr.update(value);
   }
 
   public double get()

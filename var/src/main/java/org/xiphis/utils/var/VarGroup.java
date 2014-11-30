@@ -112,6 +112,14 @@ public class VarGroup implements VarItem
     return found;
   }
 
+  public static VarGroup makeGroup(String path)
+  {
+    if (path.isEmpty())
+      return ROOT;
+    Pair<VarGroup, CharSequence> pair = ROOT.parsePath(path, true);
+    return nextGroup(pair.first, pair.second.toString(), true);
+  }
+
   public VarItem findItem(String path)
   {
     if (path.isEmpty())
@@ -127,6 +135,17 @@ public class VarGroup implements VarItem
       item.asVarBase().setStringValue(value);
     else
       throw new NoSuchElementException();
+  }
+
+  private static VarGroup nextGroup(VarGroup group, String name, boolean generate)
+  {
+    VarGroup nextGroup = group.getGroup(name);
+    if (nextGroup == null && generate)
+      nextGroup = group.addItem(name, new VarGroup());
+    else
+    if (nextGroup == null)
+      throw new NoSuchElementException();
+    return nextGroup;
   }
 
   Pair<VarGroup, CharSequence> parsePath(String path, boolean generate)
@@ -148,14 +167,7 @@ public class VarGroup implements VarItem
         if ('.' == path.charAt(pos))
         {
           String name = path.substring(start, pos);
-          VarGroup nextGroup = group.getGroup(name);
-          if (nextGroup == null && generate)
-            group = group.addItem(name, new VarGroup());
-          else
-          if (nextGroup == null)
-              throw new NoSuchElementException();
-          else
-            group = nextGroup;
+          group = nextGroup(group, name, generate);
           start = ++pos;
           continue;
         }

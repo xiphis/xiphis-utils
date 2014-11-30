@@ -15,6 +15,7 @@ package test.xiphis.utils.app;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
+import org.apache.log4j.BasicConfigurator;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,6 +34,12 @@ import org.xiphis.utils.cli.CLIShortName;
  */
 public class TestModule
 {
+  static
+  {
+    BasicConfigurator.resetConfiguration();
+    BasicConfigurator.configure();
+  }
+
   public class Retry implements TestRule
   {
     private int retryCount;

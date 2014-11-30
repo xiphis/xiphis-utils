@@ -14,8 +14,6 @@ package org.xiphis.utils.app;
 
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xiphis.utils.cli.CLIArgName;
 import org.xiphis.utils.cli.CLIDescription;
 import org.xiphis.utils.cli.CLILongName;
@@ -24,18 +22,19 @@ import org.xiphis.utils.cli.CLIParser;
 import org.xiphis.utils.cli.CLIShortName;
 import org.xiphis.utils.cli.HelpFormatter;
 import org.xiphis.utils.common.Charsets;
+import org.xiphis.utils.common.Logger;
 import org.xiphis.utils.common.ParserException;
 import org.xiphis.utils.common.SystemExit;
 import org.xiphis.utils.common.Utils;
 import org.xiphis.utils.var.VarBase;
 import org.xiphis.utils.var.VarConst;
 import org.xiphis.utils.var.VarFunc;
+import org.xiphis.utils.var.VarFuncNumber;
 import org.xiphis.utils.var.VarGroup;
 import org.xiphis.utils.var.VarItem;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -52,7 +51,7 @@ import java.util.Properties;
  */
 public class Application<M extends MainModule>
 {
-  private final Logger LOG = LoggerFactory.getLogger(getClass());
+  private final Logger LOG = Logger.getInstance(getClass());
   private final Registry<CLIParser> _registry;
   private final Class<M> _applicationModule;
 
@@ -226,8 +225,7 @@ public class Application<M extends MainModule>
     VarConst.builder("build.user",    buildProperties.getProperty("build.user", "unknown")).build();
 
     VarFunc.builder("app.args", () -> Arrays.deepToString(_appArgs)).build();
-    VarFunc.builder("app.currentTimeMillis", System::currentTimeMillis).build();
-    VarFunc.builder("app.uptimeInMillis", () -> System.currentTimeMillis() - _startTime).build();
+    VarFuncNumber.builder("app.uptimeInMillis", () -> System.currentTimeMillis() - _startTime).build();
 
     VarFunc.builder("os.arch", () -> System.getProperty("os.arch")).build();
     VarFunc.builder("os.name", () -> System.getProperty("os.name")).build();
