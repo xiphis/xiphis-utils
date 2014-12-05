@@ -65,9 +65,9 @@ public class Application<M extends MainModule>
   }
 
   /**
-   *
-   * @param applicationModule
-   * @param executorGroup
+   * Constructor
+   * @param applicationModule Application module
+   * @param executorGroup Executor for module state machine
    */
   public Application(Class<M> applicationModule, EventExecutorGroup executorGroup)
   {
@@ -207,8 +207,8 @@ public class Application<M extends MainModule>
   }
 
   /**
-   *
-   * @return
+   * Module registry for this application
+   * @return registry
    */
   public Registry getRegistry()
   {
@@ -255,9 +255,9 @@ public class Application<M extends MainModule>
   }
 
   /**
-   *
-   * @param args
-   * @return
+   * Parse command line arguments
+   * @param args args to parse
+   * @return remaining args
    */
   public static String[] parseVarArgs(String[] args)
   {
@@ -285,7 +285,7 @@ public class Application<M extends MainModule>
   }
 
   /**
-   *
+   * Return the application module instance
    * @return application module instance
    */
   protected M getApplicationModule()

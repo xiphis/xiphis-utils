@@ -117,40 +117,62 @@ public class VarAtomicLong extends VarNumber<Long, VarAtomicLong>
   }
 
   /**
+   * Atomically sets to the given value and returns the old value.
+   *
+   * @param newValue the new value
+   * @return the previous value
+   *
    * @see java.util.concurrent.atomic.AtomicLong#getAndSet(long)
    */
-  public final long getAndSet(long value)
+  public final long getAndSet(long newValue)
   {
-    checkRange(value);
-    long oldValue = _value.getAndSet(value);
-    if (oldValue != value)
-      _attr.update(value);
+    checkRange(newValue);
+    long oldValue = _value.getAndSet(newValue);
+    if (oldValue != newValue)
+      _attr.update(newValue);
     return oldValue;
   }
 
   /**
+   * Sets to the given value.
+   *
+   * @param newValue the new value
+   *
    * @see java.util.concurrent.atomic.AtomicLong#set(long)
    */
-  public final void set(long value)
+  public final void set(long newValue)
   {
-    getAndSet(value);
+    getAndSet(newValue);
   }
 
   /**
+   * Atomically sets the value to the given updated value
+   * if the current value {@code ==} the expected value.
+   *
+   * @param expect the expected value
+   * @param update the new value
+   * @return {@code true} if successful. False return indicates that
+   * the actual value was not equal to the expected value.
+   *
    * @see java.util.concurrent.atomic.AtomicLong#compareAndSet(long, long)
    */
-  public final boolean compareAndSet(long expect, long value)
+  public final boolean compareAndSet(long expect, long update)
   {
-    checkRange(value);
-    if (_value.compareAndSet(expect, value))
+    checkRange(update);
+    if (_value.compareAndSet(expect, update))
     {
-      _attr.update(value);
+      _attr.update(update);
       return true;
     }
     return false;
   }
 
   /**
+   * Atomically adds the given value to the current value.
+   *
+   * @param delta the value to add
+   * @return the previous value
+   *
    * @see java.util.concurrent.atomic.AtomicLong#getAndAdd(long)
    */
   public final long getAndAdd(long delta)
@@ -166,38 +188,62 @@ public class VarAtomicLong extends VarNumber<Long, VarAtomicLong>
   }
 
   /**
+   * Atomically increments by one the current value.
+   *
+   * @return the previous value
+   *
    * @see java.util.concurrent.atomic.AtomicInteger#getAndIncrement()
    */
   public final long getAndIncrement()
   {
-    return getAndAdd(1);
+    return getAndAdd(1L);
   }
 
   /**
+   * Atomically increments by one the current value.
+   *
+   * @return the updated value
+   *
    * @see java.util.concurrent.atomic.AtomicInteger#incrementAndGet()
    */
   public final long incrementAndGet()
   {
-    return getAndIncrement() + 1;
+    return getAndIncrement() + 1L;
   }
 
   /**
+   * Atomically decrements by one the current value.
+   *
+   * @return the previous value
+   *
    * @see java.util.concurrent.atomic.AtomicInteger#getAndDecrement()
    */
   public final long getAndDecrement()
   {
-    return getAndAdd(-1);
+    return getAndAdd(-1L);
   }
 
   /**
+   * Atomically decrements by one the current value.
+   *
+   * @return the updated value
+   *
    * @see java.util.concurrent.atomic.AtomicInteger#decrementAndGet()
    */
   public final long decrementAndGet()
   {
-    return getAndDecrement() - 1;
+    return getAndDecrement() - 1L;
   }
 
   /**
+   * Atomically updates the current value with the results of
+   * applying the given function, returning the previous value. The
+   * function should be side-effect-free, since it may be re-applied
+   * when attempted updates fail due to contention among threads.
+   *
+   * @param updateFunction a side-effect-free function
+   * @return the previous value
+   *
    * @see java.util.concurrent.atomic.AtomicInteger#getAndUpdate(java.util.function.IntUnaryOperator)
    */
   public final long getAndUpdate(LongUnaryOperator updateFunction) {
@@ -210,6 +256,14 @@ public class VarAtomicLong extends VarNumber<Long, VarAtomicLong>
   }
 
   /**
+   * Atomically updates the current value with the results of
+   * applying the given function, returning the updated value. The
+   * function should be side-effect-free, since it may be re-applied
+   * when attempted updates fail due to contention among threads.
+   *
+   * @param updateFunction a side-effect-free function
+   * @return the updated value
+   *
    * @see java.util.concurrent.atomic.AtomicInteger#updateAndGet(java.util.function.IntUnaryOperator)
    */
   public final long updateAndGet(LongUnaryOperator updateFunction) {
@@ -221,6 +275,11 @@ public class VarAtomicLong extends VarNumber<Long, VarAtomicLong>
     return next;
   }
 
+  /**
+   * Gets the current value.
+   *
+   * @return the current value
+   */
   public final long get()
   {
     return _value.get();

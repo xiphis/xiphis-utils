@@ -99,6 +99,7 @@ public final class Utils
    * If the class has a constructor which accepts a String, that would be used.
    * If there is a static method, named {@code parse}, that may be used.
    *
+   * @param <T> Generic class type.
    * @param type Type of value.
    * @param arg Text to be parsed.
    * @return parsed value.

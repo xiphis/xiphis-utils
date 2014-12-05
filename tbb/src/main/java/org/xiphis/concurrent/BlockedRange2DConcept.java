@@ -33,8 +33,8 @@ public final class BlockedRange2DConcept<RowValue extends RangeConcept<RowValue>
   /**
    * Clone range.
    *
-   * @param range
-   * @return
+   * @param range range to duplicate
+   * @return new instance
    */
   @Override
   public BlockedRange2D dup(BlockedRange2D range)
@@ -47,8 +47,8 @@ public final class BlockedRange2DConcept<RowValue extends RangeConcept<RowValue>
   /**
    * Split range into two subranges.
    *
-   * @param range
-   * @return
+   * @param range range to split
+   * @return new instance
    */
   @Override
   public BlockedRange2D split(BlockedRange2D range)

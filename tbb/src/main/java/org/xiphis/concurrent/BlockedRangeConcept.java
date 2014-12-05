@@ -70,24 +70,24 @@ public abstract class BlockedRangeConcept<Value, R extends BlockedRangeConcept<V
     /**
      * Compares values i and j.
      *
-     * @param i
-     * @param j
-     * @return true if value i precedes value j.
+     * @param i first value
+     * @param j second value
+     * @return {@code true} if value i precedes value j.
      */
     public abstract boolean lessThan(Value i, Value j);
 
     /**
      * Number of values in range i..j
      *
-     * @param i
-     * @param j
-     * @return
+     * @param i first value
+     * @param j second value
+     * @return distance between values
      */
     public abstract int difference(Value i, Value j);
 
     /**
-     * @param i
-     * @param k
+     * @param i value
+     * @param k delta
      * @return kth value after i
      */
     public abstract Value increment(Value i, int k);

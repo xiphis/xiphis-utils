@@ -29,7 +29,7 @@ public abstract class AbstractModule implements Module
 
   /**
    *
-   * @param registry
+   * @param registry registry
    */
   protected AbstractModule(Registry<?> registry)
   {
@@ -40,8 +40,8 @@ public abstract class AbstractModule implements Module
   }
 
   /**
-   *
-   * @return
+   * Returns the registry which constructed the module.
+   * @return registry
    */
   public final Registry<?> getRegistry()
   {
@@ -49,8 +49,8 @@ public abstract class AbstractModule implements Module
   }
 
   /**
-   *
-   * @return
+   * Returns the state of the module.
+   * @return state
    */
   public final ModuleState getState()
   {
@@ -58,10 +58,11 @@ public abstract class AbstractModule implements Module
   }
 
   /**
-   *
-   * @param moduleClass
-   * @param <M>
-   * @return
+   * Returns an instance of the requested module.
+   * @param moduleClass Class or interface of module
+   * @param <M> Type of module
+   * @return module instance
+   * @throws java.lang.ClassNotFoundException thrown if the requested class is not a dependency of this module.
    */
   public final <M extends Module> M getModule(Class<M> moduleClass)
       throws ClassNotFoundException

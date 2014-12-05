@@ -72,8 +72,8 @@ public final class OrderedBuffer<T>
   /**
    * Construct empty buffer.
    *
-   * @param is_ordered
-   * @param is_bound
+   * @param is_ordered ordered state
+   * @param is_bound bound state
    */
   public OrderedBuffer(boolean is_ordered, boolean is_bound)
   {
@@ -118,12 +118,11 @@ public final class OrderedBuffer<T>
 
   /**
    * Put a token into the buffer.
-   * <p/>
-   * If task information was placed into buffer, returns true; otherwise
-   * returns false, informing the caller to create and spawn a task.
+   * <p>If task information was placed into buffer, returns true; otherwise
+   * returns false, informing the caller to create and spawn a task.</p>
    *
-   * @param putter
-   * @return
+   * @param putter token
+   * @return {@code true} on success
    */
   public boolean putToken(StageTask<T> putter)
   {
@@ -167,11 +166,10 @@ public final class OrderedBuffer<T>
 
   /**
    * Note that processing of a token is finished.
-   * <p/>
-   * Fires up processing of the next token, if processing was deferred.
+   * <p>Fires up processing of the next token, if processing was deferred.</p>
    *
-   * @param token
-   * @param spawner
+   * @param token token
+   * @param spawner spawner
    */
   public void noteDone(int token, StageTask<T> spawner)
   {
@@ -201,7 +199,7 @@ public final class OrderedBuffer<T>
   /**
    * The method destroys all data in filters to prevent memory leaks
    *
-   * @param my_filter
+   * @param my_filter filter
    */
   public void clear(Filter<T> my_filter)
   {
@@ -284,7 +282,7 @@ public final class OrderedBuffer<T>
   /**
    * This structure is used to store task information in a input buffer
    *
-   * @param <T>
+   * @param <T> Task type
    * @author atcurtis
    */
   public static class TaskInfo<T>

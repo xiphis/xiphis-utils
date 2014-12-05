@@ -129,40 +129,62 @@ public class VarAtomicInteger extends VarNumber<Integer, VarAtomicInteger>
   }
 
   /**
+   * Atomically sets to the given value and returns the old value.
+   *
+   * @param newValue the new value
+   * @return the previous value
+
    * @see java.util.concurrent.atomic.AtomicInteger#getAndSet(int)
    */
-  public final int getAndSet(int value)
+  public final int getAndSet(int newValue)
   {
-    checkRange(value);
-    int oldValue = _value.getAndSet(value);
-    if (oldValue != value)
-      _attr.update(value);
+    checkRange(newValue);
+    int oldValue = _value.getAndSet(newValue);
+    if (oldValue != newValue)
+      _attr.update(newValue);
     return oldValue;
   }
 
   /**
+   * Sets to the given value.
+   *
+   * @param newValue the new value
+   *
    * @see java.util.concurrent.atomic.AtomicInteger#set(int)
    */
-  public final void set(int value)
+  public final void set(int newValue)
   {
-    getAndSet(value);
+    getAndSet(newValue);
   }
 
   /**
+   * Atomically sets the value to the given updated value
+   * if the current value {@code ==} the expected value.
+   *
+   * @param expect the expected value
+   * @param update the new value
+   * @return {@code true} if successful. False return indicates that
+   * the actual value was not equal to the expected value.
+   *
    * @see java.util.concurrent.atomic.AtomicInteger#compareAndSet(int, int)
    */
-  public final boolean compareAndSet(int expect, int value)
+  public final boolean compareAndSet(int expect, int update)
   {
-    checkRange(value);
-    if (_value.compareAndSet(expect, value))
+    checkRange(update);
+    if (_value.compareAndSet(expect, update))
     {
-      _attr.update(value);
+      _attr.update(update);
       return true;
     }
     return false;
   }
 
   /**
+   * Atomically adds the given value to the current value.
+   *
+   * @param delta the value to add
+   * @return the previous value
+   *
    * @see java.util.concurrent.atomic.AtomicInteger#getAndAdd(int)
    */
   public final int getAndAdd(int delta)
@@ -178,6 +200,10 @@ public class VarAtomicInteger extends VarNumber<Integer, VarAtomicInteger>
   }
 
   /**
+   * Atomically increments by one the current value.
+   *
+   * @return the previous value
+   *
    * @see java.util.concurrent.atomic.AtomicInteger#getAndIncrement()
    */
   public final int getAndIncrement()
@@ -186,6 +212,10 @@ public class VarAtomicInteger extends VarNumber<Integer, VarAtomicInteger>
   }
 
   /**
+   * Atomically increments by one the current value.
+   *
+   * @return the updated value
+   *
    * @see java.util.concurrent.atomic.AtomicInteger#incrementAndGet()
    */
   public final int incrementAndGet()
@@ -194,6 +224,10 @@ public class VarAtomicInteger extends VarNumber<Integer, VarAtomicInteger>
   }
 
   /**
+   * Atomically decrements by one the current value.
+   *
+   * @return the previous value
+   *
    * @see java.util.concurrent.atomic.AtomicInteger#getAndDecrement()
    */
   public final int getAndDecrement()
@@ -202,6 +236,10 @@ public class VarAtomicInteger extends VarNumber<Integer, VarAtomicInteger>
   }
 
   /**
+   * Atomically decrements by one the current value.
+   *
+   * @return the updated value
+   *
    * @see java.util.concurrent.atomic.AtomicInteger#decrementAndGet()
    */
   public final int decrementAndGet()
@@ -210,6 +248,14 @@ public class VarAtomicInteger extends VarNumber<Integer, VarAtomicInteger>
   }
 
   /**
+   * Atomically updates the current value with the results of
+   * applying the given function, returning the previous value. The
+   * function should be side-effect-free, since it may be re-applied
+   * when attempted updates fail due to contention among threads.
+   *
+   * @param updateFunction a side-effect-free function
+   * @return the previous value
+   *
    * @see java.util.concurrent.atomic.AtomicInteger#getAndUpdate(java.util.function.IntUnaryOperator)
    */
   public final int getAndUpdate(IntUnaryOperator updateFunction) {
@@ -222,6 +268,14 @@ public class VarAtomicInteger extends VarNumber<Integer, VarAtomicInteger>
   }
 
   /**
+   * Atomically updates the current value with the results of
+   * applying the given function, returning the updated value. The
+   * function should be side-effect-free, since it may be re-applied
+   * when attempted updates fail due to contention among threads.
+   *
+   * @param updateFunction a side-effect-free function
+   * @return the updated value
+   *
    * @see java.util.concurrent.atomic.AtomicInteger#updateAndGet(java.util.function.IntUnaryOperator)
    */
   public final int updateAndGet(IntUnaryOperator updateFunction) {
@@ -233,6 +287,11 @@ public class VarAtomicInteger extends VarNumber<Integer, VarAtomicInteger>
     return next;
   }
 
+  /**
+   * Gets the current value.
+   *
+   * @return the current value
+   */
   public final int get()
   {
     return _value.get();

@@ -25,7 +25,7 @@ public abstract class Filter<T>
   /**
    * Value used to mark "not in pipeline"
    *
-   * @return
+   * @return magic filter value
    */
   @SuppressWarnings("unchecked")
   Filter<T> not_in_pipeline()
@@ -101,7 +101,7 @@ public abstract class Filter<T>
   /**
    * True if filter is serial.
    *
-   * @return
+   * @return {@code true} if serial
    */
   public final boolean isSerial()
   {
@@ -111,7 +111,7 @@ public abstract class Filter<T>
   /**
    * True if filter must receive stream in order.
    *
-   * @return
+   * @return {@code true} if ordered
    */
   public final boolean isOrdered()
   {
@@ -121,7 +121,7 @@ public abstract class Filter<T>
   /**
    * True if filter is thread-bound.
    *
-   * @return
+   * @return {@code true} if bound.
    */
   public final boolean isBound()
   {
@@ -131,20 +131,18 @@ public abstract class Filter<T>
   /**
    * Operate on an item from the input stream, and return item for output
    * stream.
-   * <p/>
-   * Returns NULL if filter is a sink.
+   * <p>Returns NULL if filter is a sink.</p>
    *
-   * @param item
-   * @return
+   * @param item input item
+   * @return output item
    */
   public abstract T operator(T item);
 
   /**
    * Destroys item if pipeline was cancelled.
-   * <p/>
-   * Note it can be called concurrently even for serial filters.
+   * <p>Note it can be called concurrently even for serial filters.</p>
    *
-   * @param item
+   * @param item item to destroy
    */
   public void finalize(T item)
   {

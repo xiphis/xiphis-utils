@@ -158,9 +158,9 @@ public abstract class Task
   private static volatile int statgen;
 
   /**
-   *
-   * @return
-   * @throws Exception
+   * Abstract method which must be overridden to perform the task.
+   * @return continuation task
+   * @throws Exception on task failure
    */
   protected abstract Task execute() throws Exception;
 
@@ -204,8 +204,8 @@ public abstract class Task
   }
 
   /**
-   *
-   * @return
+   * Returns the current task for the current thread.
+   * @return task
    */
   public static Task currentTask()
   {
@@ -213,8 +213,8 @@ public abstract class Task
   }
 
   /**
-   *
-   * @return
+   * Returns the current task group for the current thread.
+   * @return context
    */
   public static TaskGroupContext currentContext() {
     Scheduler[] r = SCHEDULER.get();
@@ -222,8 +222,8 @@ public abstract class Task
   }
 
   /**
-   *
-   * @return
+   * Returns the context of this task.
+   * @return context
    */
   public final TaskGroupContext context()
   {
@@ -231,8 +231,8 @@ public abstract class Task
   }
 
   /**
-   *
-   * @return
+   * Returns the parent task of this task.
+   * @return task
    */
   public final Task parent()
   {
@@ -240,8 +240,8 @@ public abstract class Task
   }
 
   /**
-   *
-   * @return
+   * Returns the execution depth of the task.
+   * @return depth
    */
   public final int depth()
   {
@@ -249,8 +249,8 @@ public abstract class Task
   }
 
   /**
-   *
-   * @return
+   * Indicates if the task was stolen from another thread to prevent starvation.
+   * @return {@code true} if stolen
    */
   protected final boolean isStolenTask()
   {
@@ -258,8 +258,9 @@ public abstract class Task
   }
 
   /**
-   *
-   * @param refCount
+   * Sets the reference count for the task. It is very important that this
+   * is set correctly otherwise tasks may not complete or execute too early.
+   * @param refCount reference count
    */
   public final void setRefCount(int refCount)
   {
@@ -286,11 +287,11 @@ public abstract class Task
   }
 
   /**
-   *
-   * @param factoryObject
-   * @param args
+   * Constructs a root task using the provided factory.
+   * @param factoryObject task factory
+   * @param args arguments for the factory
    * @param <T> Generic type of Task {@link Factory}
-   * @return
+   * @return new task
    */
   public static <T extends Task> T allocateRoot(Factory<T> factoryObject, Object... args)
   {
@@ -301,12 +302,12 @@ public abstract class Task
   }
 
   /**
-   *
-   * @param context
-   * @param factoryObject
-   * @param args
+   * Constructs a root task using the provided factory.
+   * @param context executor context
+   * @param factoryObject task factory
+   * @param args arguments for the factory
    * @param <T> Generic type of Task {@link Factory}
-   * @return
+   * @return new task
    */
   public static <T extends Task> T allocateRoot(TaskGroupContext context, Factory<T> factoryObject, Object... args)
   {
@@ -318,8 +319,9 @@ public abstract class Task
   }
 
   /**
-   *
-   * @param tasks
+   * Executes the provided tasks and waits for them to complete.
+   * Note that this increases the stack depth.
+   * @param tasks tasks to execute
    */
   public static void spawnRootAndWait(Task... tasks)
   {
@@ -329,8 +331,9 @@ public abstract class Task
   }
 
   /**
-   *
-   * @param tasks
+   * Executes the provided tasks and waits for them to complete.
+   * Note that this increases the stack depth.
+   * @param tasks tasks to execute
    */
   public static void spawnRootAndWait(List<Task> tasks)
   {
@@ -339,9 +342,10 @@ public abstract class Task
   }
 
   /**
-   *
-   * @param context
-   * @param tasks
+   * Executes the provided tasks and waits for them to complete.
+   * Note that this increases the stack depth.
+   * @param context execution context
+   * @param tasks tasks to execute
    * @throws InterruptedException
    */
   public static void spawnRootAndWait(TaskGroupContext context, Task... tasks)
@@ -353,9 +357,10 @@ public abstract class Task
   }
 
   /**
-   *
-   * @param context
-   * @param tasks
+   * Executes the provided tasks and waits for them to complete.
+   * Note that this increases the stack depth.
+   * @param context execution context
+   * @param tasks tasks to execute
    * @throws InterruptedException
    */
   public static void spawnRootAndWait(TaskGroupContext context, List<Task> tasks)
@@ -413,8 +418,8 @@ public abstract class Task
   }
 
   /**
-   *
-   * @return
+   * Indicate if the task is a local task.
+   * @return {@code true} if the task is owned by the current thread.
    */
   public final boolean isOwnedByCurrentThread()
   {
@@ -423,10 +428,9 @@ public abstract class Task
 
   /**
    * Set scheduling depth to given value.
-   * <p/>
-   * The depth must be non-negative.
+   * <p>The depth must be non-negative.</p>
    *
-   * @param new_depth
+   * @param new_depth depth
    */
   public final void setDepth(int new_depth)
   {
@@ -437,10 +441,9 @@ public abstract class Task
 
   /**
    * Change scheduling depth by given amount.
-   * <p/>
-   * The resulting depth must be non-negative.
+   * <p>The resulting depth must be non-negative.</p>
    *
-   * @param delta
+   * @param delta depth delta
    */
   public final void addToDepth(int delta)
   {
@@ -451,8 +454,8 @@ public abstract class Task
   }
 
   /**
-   *
-   * @param child
+   * Spawn a child task
+   * @param child task
    */
   public final void spawn(Task child)
   {
@@ -461,8 +464,8 @@ public abstract class Task
   }
 
   /**
-   *
-   * @param child
+   * Spawn child tasks
+   * @param child tasks
    */
   public final void spawn(Iterable<Task> child)
   {
@@ -473,7 +476,7 @@ public abstract class Task
   /**
    * Similar to spawn followed by waitForAll, but more efficient.
    *
-   * @param child
+   * @param child task
    */
   public final void spawnAndWaitForAll(Task child)
   {
@@ -516,8 +519,7 @@ public abstract class Task
 
   /**
    * Returns a continuation task of *this.
-   * <p/>
-   * The continuation's parent becomes the parent of this.
+   * <p>The continuation's parent becomes the parent of this.</p>
    *
    * @param <T> Generic type of Task {@link Factory}
    * @param cls Instance of Task {@link Factory}. Lambda can be used here.
@@ -535,11 +537,9 @@ public abstract class Task
 
   /**
    * Like allocateChild, except that task's parent becomes "parent", not this.
-   * <p/>
-   * Typically used in conjunction with schedule_to_reexecute to implement
-   * while loops.
-   * <p/>
-   * Atomically increments the reference count of t.parent()
+   * <p>Typically used in conjunction with schedule_to_reexecute to implement
+   * while loops.</p>
+   * <p>Atomically increments the reference count of {@code t.parent()}</p>
    *
    * @param <T> Generic type of Task {@link Factory}
    * @param cls Instance of Task {@link Factory}. Lambda can be used here.
@@ -559,13 +559,11 @@ public abstract class Task
 
   /**
    * Change this to be a continuation of its former self.
-   * <p/>
-   * The caller must guarantee that the task's refcount does not become zero
+   * <p>The caller must guarantee that the task's refcount does not become zero
    * until after the method execute() returns. Typically, this is done by
    * having method execute() return a pointer to a child of the task. If the
-   * guarantee cannot be made, use method recycleAsSafeContinuation instead.
-   * <p/>
-   * Because of the hazard, this method may be deprecated in the future.
+   * guarantee cannot be made, use method recycleAsSafeContinuation instead.</p>
+   * <p>Because of the hazard, this method may be deprecated in the future.</p>
    */
   protected final void recycleAsContinuation()
   {
@@ -575,8 +573,7 @@ public abstract class Task
 
   /**
    * Recommended to use, safe variant of recycleAsContinuation.
-   * <p/>
-   * For safety, it requires additional increment of _refCount.
+   * <p>For safety, it requires additional increment of _refCount.</p>
    */
   protected final void recycleAsSafeContinuation()
   {
@@ -587,7 +584,7 @@ public abstract class Task
   /**
    * Change this to be a child of new_parent.
    *
-   * @param new_parent
+   * @param new_parent parent task
    */
   protected final void recycleAsChildOf(Task new_parent)
   {
@@ -607,8 +604,7 @@ public abstract class Task
 
   /**
    * Schedule this for reexecution after current execute() returns.
-   * <p/>
-   * Requires that this.execute() be running.
+   * <p>Requires that this.execute() be running.</p>
    */
   protected final void recycleToReexecute()
   {
@@ -1141,8 +1137,8 @@ public abstract class Task
     }
 
     /**
-     *
-     * @return
+     * Checks the state of the current execution group.
+     * @return {@code true} if cancelled
      */
     public boolean isGroupExecutionCancelled()
     {
@@ -1150,8 +1146,8 @@ public abstract class Task
     }
 
     /**
-     *
-     * @return
+     * Cancels the current execution group.
+     * @return {@code true} if successful.
      */
     public boolean cancelGroupExecution()
     {
@@ -1174,7 +1170,7 @@ public abstract class Task
   /**
    * Set affinity for this task.
    *
-   * @param id
+   * @param id affinity id
    */
   public final void setAffinity(int id)
   {
@@ -1184,7 +1180,7 @@ public abstract class Task
   /**
    * Current affinity of this task
    *
-   * @return
+   * @return affinity id
    */
   public final int affinity()
   {
@@ -1193,11 +1189,9 @@ public abstract class Task
 
   /**
    * Invoked by scheduler to notify task that it ran on unexpected thread.
-   * <p/>
-   * Invoked before method execute() runs, if task is stolen, or task has
-   * affinity but will be executed on another thread.
-   * <p/>
-   * The default action does nothing.
+   * <p>Invoked before method execute() runs, if task is stolen, or task has
+   * affinity but will be executed on another thread.</p>
+   * <p>The default action does nothing.</p>
    */
   public void noteAffinity(int my_affinity_id)
   {
@@ -1211,7 +1205,6 @@ public abstract class Task
   /**
    * Initiates cancellation of all tasks in this cancellation group and its
    * subordinate groups.
-   * <p/>
    *
    * @return false if cancellation has already been requested, true otherwise.
    */
@@ -1227,7 +1220,7 @@ public abstract class Task
   /**
    * Returns true if the context received cancellation request.
    *
-   * @return
+   * @return {@code true} if cancelled
    */
   public final boolean isCancelled()
   {

@@ -16,16 +16,16 @@ public abstract class PartitionerConcept<R extends RangeConcept<R>.Range, P exte
   /**
    * Clone partition/er.
    *
-   * @param partitioner
-   * @return
+   * @param partitioner partition to clone
+   * @return new instance
    */
   public abstract P clone(P partitioner);
 
   /**
    * Splits partitioner into to partitioners.
    *
-   * @param partitioner
-   * @return
+   * @param partitioner partition to split
+   * @return new instance
    */
   public abstract P split(P partitioner);
 
@@ -34,8 +34,8 @@ public abstract class PartitionerConcept<R extends RangeConcept<R>.Range, P exte
     /**
      * Test if range should be passed to the body of task.
      *
-     * @param range
-     * @param task
+     * @param range range to check
+     * @param task task
      * @return false if range should instead be split.
      */
     public boolean shouldExecuteRange(R range, Task task)

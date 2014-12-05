@@ -19,8 +19,8 @@ public interface Factory<T>
 {
   /**
    * Faster than doing clazz.newInstance()
-   * @param arguments
-   * @return
+   * @param arguments Arguments for the factory
+   * @return a new object
    */
   T construct(Object... arguments);
 }

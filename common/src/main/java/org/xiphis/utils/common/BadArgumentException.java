@@ -40,10 +40,10 @@ public class BadArgumentException extends IllegalArgumentException
   /**
    * Constructs a new exception with the specified detail message and
    * cause.
-   * <p>
+   * <br>
    * <p>Note that the detail message associated with <code>cause</code> is
    * <i>not</i> automatically incorporated in this exception's detail
-   * message.
+   * message.</p>
    *
    * @param message the detail message (which is saved for later retrieval
    *                by the {@link Throwable#getMessage()} method).

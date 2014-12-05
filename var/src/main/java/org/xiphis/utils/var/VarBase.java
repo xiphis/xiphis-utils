@@ -60,6 +60,12 @@ public interface VarBase<Type, VarType extends VarBase<Type, VarType>> extends V
 
   void removeListener(VarListener<Type, VarType> listener);
 
+  /**
+   * Gets the current value. If the value type is a primative, the returned value
+   * will be a boxed value.
+   *
+   * @return the current value
+   */
   Type getValue();
 
   Pair<Type, Long> getValueAndTimestamp();

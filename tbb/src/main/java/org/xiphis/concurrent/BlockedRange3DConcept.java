@@ -22,8 +22,8 @@ public final class BlockedRange3DConcept<PageValue extends RangeConcept<PageValu
   /**
    * Clone range.
    *
-   * @param range
-   * @return
+   * @param range range to clone
+   * @return new instance
    */
   @Override
   public BlockedRange3DConcept<PageValue, RowValue, ColValue>.BlockedRange3D dup(
@@ -39,8 +39,8 @@ public final class BlockedRange3DConcept<PageValue extends RangeConcept<PageValu
   /**
    * Split range into two subranges.
    *
-   * @param range
-   * @return
+   * @param range range to split
+   * @return new instance
    */
   @Override
   public BlockedRange3DConcept<PageValue, RowValue, ColValue>.BlockedRange3D split(
@@ -100,7 +100,7 @@ public final class BlockedRange3DConcept<PageValue extends RangeConcept<PageValu
     /**
      * Determines size of this range.
      *
-     * @return
+     * @return size
      */
     @Override
     public int size()
@@ -122,7 +122,7 @@ public final class BlockedRange3DConcept<PageValue extends RangeConcept<PageValu
     /**
      * Test if range can be partitioned into two subranges.
      *
-     * @return
+     * @return {@code true} if divisible
      */
     @Override
     public boolean isDivisible()

@@ -44,8 +44,8 @@ public class ListRangeConcept<T>
   /**
    * Clone range.
    *
-   * @param range
-   * @return
+   * @param range range to clone
+   * @return new instance
    */
   @Override
   public ListRange dup(ListRange range)
@@ -56,8 +56,8 @@ public class ListRangeConcept<T>
   /**
    * Split range into two subranges.
    *
-   * @param range
-   * @return
+   * @param range range to split
+   * @return new instance
    */
   @Override
   public ListRange split(ListRange range)

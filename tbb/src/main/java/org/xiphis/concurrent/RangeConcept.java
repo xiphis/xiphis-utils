@@ -17,16 +17,16 @@ public abstract class RangeConcept<R extends RangeConcept<R>.Range>
   /**
    * Clone range.
    *
-   * @param range
-   * @return
+   * @param range range to clone
+   * @return new instance
    */
   public abstract R dup(R range);
 
   /**
    * Split range into two subranges.
    *
-   * @param range
-   * @return
+   * @param range range to split
+   * @return new instance
    */
   public abstract R split(R range);
 
@@ -35,7 +35,7 @@ public abstract class RangeConcept<R extends RangeConcept<R>.Range>
     /**
      * Determines size of this range.
      *
-     * @return
+     * @return size
      */
     public abstract int size();
 
@@ -49,7 +49,7 @@ public abstract class RangeConcept<R extends RangeConcept<R>.Range>
     /**
      * Test if range can be partitioned into two subranges.
      *
-     * @return
+     * @return {@code true} if divisible.
      */
     public abstract boolean isDivisible();
 

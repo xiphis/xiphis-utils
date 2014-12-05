@@ -60,7 +60,7 @@ public final class Parallel
     /**
      * Apply body to range
      *
-     * @param range
+     * @param range range
      */
     @Override
     public void apply(R range)
@@ -72,10 +72,12 @@ public final class Parallel
   // Classes for parallelFor()
 
   /**
-   * @param <R>
-   * @param <B>
-   * @param range
-   * @param body
+   * Executes a task over a range
+   *
+   * @param <R> type of range
+   * @param <B> type of task
+   * @param range range
+   * @param body task
    */
   public static <R extends RangeConcept<R>.Range, B extends Body<R>> //
   void parallelFor(R range, B body)
@@ -85,10 +87,12 @@ public final class Parallel
   }
 
   /**
-   * @param <R>
-   * @param <B>
-   * @param range
-   * @param body
+   * Executes a task over a range
+   *
+   * @param <R> type of range
+   * @param <B> type of task
+   * @param range range
+   * @param body task
    */
   public static <R extends RangeConcept<R>.Range, B extends CloneableBody<R, B>> //
   void parallelFor(R range, B body)
@@ -100,11 +104,12 @@ public final class Parallel
   // Classes for parallelReduce()
 
   /**
-   * @param <R>
-   * @param <B>
-   * @param range
-   * @param body
-   * @param context
+   * Executes a task over a range within an execution context.
+   * @param <R> type of range
+   * @param <B> type of task
+   * @param range range
+   * @param body task
+   * @param context context
    */
   public static <R extends RangeConcept<R>.Range, B extends Body<R>> //
   void parallelFor(R range, B body, TaskGroupContext context)
@@ -113,11 +118,12 @@ public final class Parallel
   }
 
   /**
-   * @param <R>
-   * @param <B>
-   * @param range
-   * @param cloneableBody
-   * @param context
+   * Executes a task over a range within an execution context.
+   * @param <R> type of range
+   * @param <B> type of task
+   * @param range range
+   * @param cloneableBody task
+   * @param context context
    */
   public static <R extends RangeConcept<R>.Range, B extends CloneableBody<R, B>> //
   void parallelFor(R range, B cloneableBody, TaskGroupContext context)
@@ -126,12 +132,13 @@ public final class Parallel
   }
 
   /**
-   * @param <R>
-   * @param <B>
-   * @param <P>
-   * @param range
-   * @param body
-   * @param partitioner
+   * Executes a task over a range using a partitioner
+   * @param <R> type of range
+   * @param <B> type of task
+   * @param <P> type of partitioner
+   * @param range range
+   * @param body task
+   * @param partitioner partitioner
    */
   public static <R extends RangeConcept<R>.Range, B extends Body<R>, P extends PartitionerConcept<R, P>.Partitioner> //
   void parallelFor(R range, B body, P partitioner)
@@ -141,12 +148,13 @@ public final class Parallel
   }
 
   /**
-   * @param <R>
-   * @param <B>
-   * @param <P>
-   * @param range
-   * @param cloneableBody
-   * @param partitioner
+   * Executes a task over a range using a partitioner
+   * @param <R> type of range
+   * @param <B> type of task
+   * @param <P> type of partitioner
+   * @param range range
+   * @param cloneableBody task
+   * @param partitioner partitioner
    */
   public static <R extends RangeConcept<R>.Range, B extends CloneableBody<R, B>, P extends PartitionerConcept<R, P>.Partitioner> //
   void parallelFor(R range, B cloneableBody, P partitioner)
@@ -156,13 +164,14 @@ public final class Parallel
   }
 
   /**
-   * @param <R>
-   * @param <B>
-   * @param <P>
-   * @param range
-   * @param body
-   * @param partitioner
-   * @param context
+   * Executes a task over a range using a partitioner within an execution context
+   * @param <R> type of range
+   * @param <B> type of task
+   * @param <P> type of partitioner
+   * @param range range
+   * @param body task
+   * @param partitioner partitioner
+   * @param context context
    */
   public static <R extends RangeConcept<R>.Range, B extends Body<R>, P extends PartitionerConcept<R, P>.Partitioner> //
   void parallelFor(R range, B body, P partitioner, TaskGroupContext context)
@@ -171,13 +180,14 @@ public final class Parallel
   }
 
   /**
-   * @param <R>
-   * @param <B>
-   * @param <P>
-   * @param range
-   * @param cloneableBody
-   * @param partitioner
-   * @param context
+   * Executes a task over a range using a partitioner within an execution context
+   * @param <R> type of range
+   * @param <B> type of task
+   * @param <P> type of partitioner
+   * @param range range
+   * @param cloneableBody task
+   * @param partitioner partitioner
+   * @param context execution context
    */
   public static <R extends RangeConcept<R>.Range, B extends CloneableBody<R, B>, P extends PartitionerConcept<R, P>.Partitioner> //
   void parallelFor(R range, B cloneableBody, P partitioner, TaskGroupContext context)
@@ -188,10 +198,11 @@ public final class Parallel
   // Classes for parallelScan()
 
   /**
-   * @param <R>
-   * @param <B>
-   * @param range
-   * @param body
+   * Perform a reduce task over a range
+   * @param <R> range
+   * @param <B> reduce
+   * @param range range
+   * @param body reduce
    */
   public static <R extends RangeConcept<R>.Range, B extends ReduceBody<R, B>> //
   void parallelReduce(R range, B body)
@@ -201,11 +212,12 @@ public final class Parallel
   }
 
   /**
-   * @param <R>
-   * @param <B>
-   * @param range
-   * @param body
-   * @param context
+   * Perform a reduce task over a range within an execution context.
+   * @param <R> range
+   * @param <B> reduce
+   * @param range range
+   * @param body reduce
+   * @param context context
    */
   public static <R extends RangeConcept<R>.Range, B extends ReduceBody<R, B>> //
   void parallelReduce(R range, B body, TaskGroupContext context)
@@ -214,12 +226,13 @@ public final class Parallel
   }
 
   /**
-   * @param <R>
-   * @param <B>
-   * @param <P>
-   * @param range
-   * @param body
-   * @param partitioner
+   * Perform a reduce task over a range with a partitioner
+   * @param <R> range
+   * @param <B> reduce
+   * @param <P> partitioner
+   * @param range range
+   * @param body reduce
+   * @param partitioner partitioner
    */
   public static <R extends RangeConcept<R>.Range, B extends ReduceBody<R, B>, P extends PartitionerConcept<R, P>.Partitioner> //
   void parallelReduce(R range, B body, P partitioner)
@@ -231,13 +244,14 @@ public final class Parallel
   ;
 
   /**
-   * @param <R>
-   * @param <B>
-   * @param <P>
-   * @param range
-   * @param body
-   * @param partitioner
-   * @param context
+   * Perform a reduce task over a range with a partitioner within an execution context
+   * @param <R> range
+   * @param <B> reduce
+   * @param <P> partitioner
+   * @param range range
+   * @param body reduce
+   * @param partitioner partitioner
+   * @param context context
    */
   public static <R extends RangeConcept<R>.Range, B extends ReduceBody<R, B>, P extends PartitionerConcept<R, P>.Partitioner> //
   void parallelReduce(R range, B body, P partitioner, TaskGroupContext context)
