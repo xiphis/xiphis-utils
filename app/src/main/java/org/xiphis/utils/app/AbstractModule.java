@@ -14,6 +14,7 @@ package org.xiphis.utils.app;
 
 import io.netty.util.concurrent.Promise;
 import org.xiphis.utils.common.ConcurrentIdentityHashMap;
+import org.xiphis.utils.common.Logger;
 
 import java.util.IdentityHashMap;
 import java.util.NoSuchElementException;
@@ -24,6 +25,7 @@ import java.util.NoSuchElementException;
  */
 public abstract class AbstractModule implements Module
 {
+  protected final Logger LOG = Logger.getInstance(getClass());
   private final Registry<?> _registry;
   private final ConcurrentIdentityHashMap<Class<? extends Module>, Module> _depends;
 
@@ -80,6 +82,7 @@ public abstract class AbstractModule implements Module
         return module;
       }
     }
+    LOG.error("Module {} is not a dependency", moduleClass.getName());
     throw new NoSuchElementException();
   }
 

@@ -14,6 +14,8 @@ package org.xiphis.utils.app;
 
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.Promise;
 import org.xiphis.utils.common.ConcurrentIdentityHashMap;
 import org.xiphis.utils.common.Configure;
@@ -31,10 +33,10 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static java.lang.String.format;
 /**
  * @author atcurtis
  * @since 2014-11-18
@@ -67,7 +69,11 @@ public class Registry<Config extends Configure>
   private final EventExecutorGroup _eventExecutor;
   private final AtomicBoolean _shutdown;
   private final Promise<Void> _shutdownPromise;
+  final ConcurrentLinkedQueue<ModuleInfo<? extends Module>> _restartModules;
   private ModuleStateChangeListener _stateChangeListener;
+  private long _shutdownGraceTime;
+  private long _shutdownTimeout;
+  private TimeUnit _shutdownTimeUnit;
 
   /**
    * Constructor.
@@ -85,6 +91,8 @@ public class Registry<Config extends Configure>
     _configure = configure;
     _modules = new ConcurrentIdentityHashMap<>();
     _instanceMap = new ConcurrentIdentityHashMap<>();
+    _restartModules = new ConcurrentLinkedQueue<>();
+    setShutdownGraceTimeout(100, 30000, TimeUnit.MILLISECONDS);
   }
 
   /**
@@ -161,7 +169,7 @@ public class Registry<Config extends Configure>
 
   <T> Future<T> submit(Callable<T> paramCallable)
   {
-    return _eventExecutor.submit(paramCallable);
+    return _eventExecutor.schedule(paramCallable, 1, TimeUnit.MILLISECONDS);
   }
 
   <V> Promise<V> newPromise()
@@ -226,7 +234,7 @@ public class Registry<Config extends Configure>
       {
         if (getModuleInfo(depends).addDependent(info))
         {
-          LOG.info(format("%s depends upon %s", moduleClass.getName(), depends.getName()));
+          LOG.debug("{} depends upon {}", moduleClass.getName(), depends.getName());
         }
       }
     }
@@ -381,11 +389,22 @@ public class Registry<Config extends Configure>
 
   void stateChanged(Class<? extends Module> clazz, ModuleState fromState, ModuleState toState)
   {
-    LOG.info(format("[%s] %s -> %s", clazz.getName(), fromState, toState));
+    LOG.debug("[{}] {} -> {}", clazz.getName(), fromState, toState);
     if (_stateChangeListener != null)
     {
       _stateChangeListener.onChange(clazz, fromState, toState);
     }
+  }
+
+  public void setShutdownGraceTimeout(long graceTime, long timeoutTime, TimeUnit unit)
+  {
+    if (unit == null)
+      throw new NullPointerException();
+    if (graceTime < 0 || timeoutTime < 0)
+      throw new IllegalArgumentException();
+    _shutdownGraceTime = graceTime;
+    _shutdownTimeout = timeoutTime;
+    _shutdownTimeUnit = unit;
   }
 
   /**
@@ -394,6 +413,7 @@ public class Registry<Config extends Configure>
    * be registered.
    * Invocation has no additional effect if already shut down.
    */
+  @SuppressWarnings("unchecked")
   public void shutdown()
   {
     if (!_shutdown.getAndSet(true))
@@ -405,22 +425,32 @@ public class Registry<Config extends Configure>
       for (ModuleInfo<? extends Module> info : infos)
         futures.add(info.stop(this));
 
-      combineFutures(futures).addListener(listFuture -> {
-        if (!listFuture.isSuccess())
-          LOG.error("Shutdown encountered error", listFuture.cause());
-
-        LOG.info("Shutting down EventExecutor");
-        _eventExecutor.shutdownGracefully().addListener(future -> {
-          if (listFuture.isSuccess())
-          {
-            LOG.info("Shutdown completed successfully");
-            _shutdownPromise.setSuccess(null);
+      combineFutures(futures).addListener((Future<List<?>> listFuture) -> {
+        if (listFuture.isSuccess()) {
+          if (_eventExecutor != GlobalEventExecutor.INSTANCE) {
+            LOG.debug("Shutting down EventExecutor");
+            Future shutdownFuture = _eventExecutor.shutdownGracefully(_shutdownGraceTime, _shutdownTimeout, _shutdownTimeUnit);
+            GenericFutureListener<Future<?>> shutdownListener = future -> {
+              if (future.isSuccess())
+                _shutdownPromise.setSuccess(null);
+              else {
+                LOG.error("Error shutting down EventExecutor", future.cause());
+                _shutdownPromise.setFailure(future.cause());
+              }
+            };
+            shutdownFuture.addListener(shutdownListener);
           }
           else
           {
-            _shutdownPromise.setFailure(listFuture.cause());
+            _shutdownPromise.setSuccess(null);
           }
-        });
+        }
+        else {
+          LOG.error("Shutdown encountered error", listFuture.cause());
+          if (_eventExecutor != GlobalEventExecutor.INSTANCE)
+            _eventExecutor.shutdownGracefully(0, _shutdownTimeout, _shutdownTimeUnit);
+          _shutdownPromise.setFailure(listFuture.cause());
+        }
       });
     }
   }

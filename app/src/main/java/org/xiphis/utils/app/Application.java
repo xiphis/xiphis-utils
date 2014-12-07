@@ -12,8 +12,8 @@
 
 package org.xiphis.utils.app;
 
-import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.xiphis.utils.cli.CLIArgName;
 import org.xiphis.utils.cli.CLIDescription;
 import org.xiphis.utils.cli.CLILongName;
@@ -25,7 +25,6 @@ import org.xiphis.utils.common.Charsets;
 import org.xiphis.utils.common.Logger;
 import org.xiphis.utils.common.ParserException;
 import org.xiphis.utils.common.SystemExit;
-import org.xiphis.utils.common.Utils;
 import org.xiphis.utils.var.VarBase;
 import org.xiphis.utils.var.VarConst;
 import org.xiphis.utils.var.VarFunc;
@@ -33,11 +32,7 @@ import org.xiphis.utils.var.VarFuncNumber;
 import org.xiphis.utils.var.VarGroup;
 import org.xiphis.utils.var.VarItem;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -59,9 +54,13 @@ public class Application<M extends MainModule>
   private final long _startTime = System.currentTimeMillis();
   private final Properties buildProperties = getBuildProperties();
 
+  /**
+   * Constructor
+   * @param applicationModule Application module
+   */
   public Application(Class<M> applicationModule)
   {
-    this(applicationModule, new DefaultEventExecutorGroup(Utils.PROCESSORS));
+    this(applicationModule, GlobalEventExecutor.INSTANCE);
   }
 
   /**
@@ -81,34 +80,65 @@ public class Application<M extends MainModule>
   }
 
   /**
+   * Handler for {@code --help} command line.
    * @throws org.xiphis.utils.common.SystemExit
    */
   @CLIShortName('?')
   @CLILongName("help")
   @CLIDescription("Print this message and exit.")
   public void handleCLIHelp()
+      throws SystemExit
   {
-    StringBuilder sb = new StringBuilder();
-    HelpFormatter helpFormatter = new HelpFormatter(79, sb);
-    _registry.getConfig().printHelp(helpFormatter);
-    System.out.print(sb);
+    System.out.print(renderCLIHelp(79, new StringBuilder()));
     System.out.flush();
     throw new SystemExit(0);
   }
 
+  /**
+   * Render the help output content.
+   * @param width width for the HelpFormatter.
+   * @param sb StringBuilder
+   * @return StringBuilder
+   */
+  protected StringBuilder renderCLIHelp(int width, StringBuilder sb)
+  {
+    _registry.getConfig().printHelp(new HelpFormatter(width, sb));
+    return sb;
+  }
+
+
   private BufferedReader openSource(String source)
       throws IOException
   {
+    Reader reader;
     try
     {
-      return new BufferedReader(new InputStreamReader(new URL(source).openStream(), Charsets.UTF_8));
+      InputStream inputStream;
+
+      if ("-".equals(source))
+        inputStream = System.in;
+      else
+        inputStream = new URL(source).openStream();
+
+      if (inputStream == null)
+        reader = new StringReader("");
+      else
+        reader = new InputStreamReader(inputStream, Charsets.UTF_8);
     }
     catch (MalformedURLException e)
     {
-      return new BufferedReader(new InputStreamReader(new FileInputStream(source), Charsets.UTF_8));
+      reader = new InputStreamReader(new FileInputStream(source), Charsets.UTF_8);
     }
+    if (!(reader instanceof StringReader))
+      LOG.info("Reading config from: {}", source);
+    return new BufferedReader(reader);
   }
 
+  /**
+   * Handler for {@code --config=URL/FILE} command line option.
+   * @param source Filename or URL
+   * @throws IOException on error
+   */
   @CLILongName("config")
   @CLIArgName("URL/FILE")
   @CLIDescription("Load config arguments from an alternate source")
@@ -244,13 +274,17 @@ public class Application<M extends MainModule>
   private static Properties getBuildProperties()
   {
     Properties prop = new Properties();
-    try
+    try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("build.properties"))
     {
-      InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("build.properties");
-      prop.load(is);
-      is.close();
+      if (is != null)
+        prop.load(is);
+      else
+        Logger.getInstance(Application.class).info("No build.properties resource found");
     }
-    catch (Throwable ignore) { }
+    catch (Throwable ex)
+    {
+      Logger.getInstance(Application.class).info("Unable to load build.properties resource.", ex);
+    }
     return prop;
   }
 
@@ -320,8 +354,10 @@ public class Application<M extends MainModule>
     int rc;
     try
     {
+      _appArgs = args;
 
-      LOG.info(String.format("main(%s)", Arrays.deepToString(_appArgs = args)));
+      if (LOG.isDebugEnabled())
+        LOG.debug("main({})", Arrays.deepToString(_appArgs));
 
       M application;
       try
@@ -355,7 +391,7 @@ public class Application<M extends MainModule>
 
       LOG.info("Executing application main");
       rc = application.main(this, args);
-      LOG.info(String.format("Application main returned rc=%d", rc));
+      LOG.info("Application main returned rc={}", rc);
     }
     finally
     {

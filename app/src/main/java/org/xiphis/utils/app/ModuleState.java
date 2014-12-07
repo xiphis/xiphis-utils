@@ -18,15 +18,65 @@ package org.xiphis.utils.app;
  */
 public enum ModuleState
 {
+  /**
+   * Module is shutting down and will soon have its {@link org.xiphis.utils.app.Module#stop(io.netty.util.concurrent.Promise)}
+   * method invoked.
+   */
   STOPPING,
+
+  /**
+   * Module has completed shutting down.
+   */
   STOPPED,
+
+  /**
+   * An error which has occurred during a state transition has moved the module into the FAILED state.
+   */
   FAILED,
+
+  /**
+   * The module class has been registered but no instance has yet to be constructed.
+   */
   UNINIT,
+
+  /**
+   * The module class implementation will soon be constructed.
+   */
   NEW,
+
+  /**
+   * The module class implementation has been constructed successfully.
+   */
   IDLE,
+
+  /**
+   * Module will soon have its {@link org.xiphis.utils.app.Module#init(io.netty.util.concurrent.Promise)} method
+   * invoked where it will enter the {@code INITED} state when it has completed successfully.
+   */
   INIT,
+
+  /**
+   * Module has completed its initialisation after the {@link org.xiphis.utils.app.Module#init(io.netty.util.concurrent.Promise)}
+   * method has completed successfully.
+   */
   INITED,
+
+  /**
+   * Module will soon have its {@link org.xiphis.utils.app.Module#flush(io.netty.util.concurrent.Promise)} method
+   * invoked where it will enter the {@code RUN} state when it has completed successfully.
+   */
   FLUSH,
+
+  /**
+   * Module is running after the {@link org.xiphis.utils.app.Module#flush(io.netty.util.concurrent.Promise)}
+   * has completed successfully.
+   */
   RUN,
+
+  /**
+   * Module is entering quiescence in preparation to be flushed again. The module will proceed into the {@code INITED}
+   * state after the {@link org.xiphis.utils.app.Module#pause(io.netty.util.concurrent.Promise)} method completes.
+   * }
+   */
   PAUSE,
 }

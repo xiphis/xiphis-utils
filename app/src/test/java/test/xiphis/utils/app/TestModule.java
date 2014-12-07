@@ -357,4 +357,127 @@ public class TestModule
     registry.awaitTermination();
   }
 
+    @Test
+    public void testModule4()
+        throws InterruptedException, ClassNotFoundException
+    {
+      String[] args = {"-v"};
+      Registry<CLIParser> registry = new Registry<>(new CLIParser(), new DefaultEventExecutorGroup(2));
+      StringBuffer stateChanges = new StringBuffer();
+      registry.setStateChangeListener((clazz, fromState, toState) -> {
+          stateChanges.append(String.format("[%s] %s -> %s%n", clazz.getName(), fromState, toState));
+      });
+      registry.getConfig().register(ModFoo3.class, Registry.RECURSE);
+      Assert.assertEquals(Registry.getDependencies(ModFoo3.class).size(), 1);
+      args = registry.getConfig().parse(args);
+      Assert.assertEquals(0, args.length);
+      Assert.assertEquals("STATE    MODULE\n" +
+                      "======== ======\n",
+              registry.printModuleState(new StringBuilder()).toString());
+      Future<?> initFuture = registry.init(ModFoo3.class);
+      Assert.assertEquals("STATE    MODULE            \n" +
+                      "======== ==================\n" +
+                      "UNINIT   TestModule$ModFoo \n" +
+                      "UNINIT   TestModule$ModFoo2\n" +
+                      "NEW      TestModule$ModFoo3\n",
+              registry.printModuleState(new StringBuilder()).toString());
+      initFuture.sync();
+      Assert.assertEquals("STATE    MODULE            \n" +
+                      "======== ==================\n" +
+                      "UNINIT   TestModule$ModFoo \n" +
+                      "IDLE     TestModule$ModFoo2\n" +
+                      "INITED   TestModule$ModFoo3\n",
+              registry.printModuleState(new StringBuilder()).toString());
+      Future<?> flushFuture = registry.flush(ModFoo3.class);
+      Assert.assertEquals("STATE    MODULE            \n" +
+                      "======== ==================\n" +
+                      "UNINIT   TestModule$ModFoo \n" +
+                      "IDLE     TestModule$ModFoo2\n" +
+                      "FLUSH    TestModule$ModFoo3\n",
+              registry.printModuleState(new StringBuilder()).toString());
+      flushFuture.sync();
+      Assert.assertEquals("STATE    MODULE            \n" +
+                      "======== ==================\n" +
+                      "RUN      TestModule$ModFoo \n" +
+                      "RUN      TestModule$ModFoo2\n" +
+                      "RUN      TestModule$ModFoo3\n",
+              registry.printModuleState(new StringBuilder()).toString());
+      Assert.assertTrue(registry.getModule(ModFoo.class).getNow().verbose);
+      Future<?> pauseFuture = registry.flush(ModFoo.class);
+      Assert.assertEquals("STATE    MODULE            \n" +
+              "======== ==================\n" +
+              "PAUSE    TestModule$ModFoo \n" +
+              "RUN      TestModule$ModFoo2\n" +
+              "RUN      TestModule$ModFoo3\n",
+          registry.printModuleState(new StringBuilder()).toString());
+      pauseFuture.sync();
+      Assert.assertEquals("STATE    MODULE            \n" +
+              "======== ==================\n" +
+              "RUN      TestModule$ModFoo \n" +
+              "INITED   TestModule$ModFoo2\n" +
+              "FLUSH    TestModule$ModFoo3\n",
+          registry.printModuleState(new StringBuilder()).toString());
+      Thread.sleep(100);
+      Assert.assertEquals("STATE    MODULE            \n" +
+              "======== ==================\n" +
+              "RUN      TestModule$ModFoo \n" +
+              "RUN      TestModule$ModFoo2\n" +
+              "RUN      TestModule$ModFoo3\n",
+          registry.printModuleState(new StringBuilder()).toString());
+      Future<?> stopFuture = registry.stop(ModFoo.class);
+      Assert.assertEquals("STATE    MODULE            \n" +
+              "======== ==================\n" +
+              "STOPPING TestModule$ModFoo \n" +
+              "RUN      TestModule$ModFoo2\n" +
+              "RUN      TestModule$ModFoo3\n",
+          registry.printModuleState(new StringBuilder()).toString());
+      stopFuture.sync();
+      Assert.assertEquals("STATE    MODULE            \n" +
+                      "======== ==================\n" +
+                      "STOPPED  TestModule$ModFoo \n" +
+                      "STOPPED  TestModule$ModFoo2\n" +
+                      "STOPPED  TestModule$ModFoo3\n",
+              registry.printModuleState(new StringBuilder()).toString());
+
+      Assert.assertEquals("[test.xiphis.utils.app.TestModule$ModFoo3] UNINIT -> NEW\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo3] NEW -> IDLE\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo3] IDLE -> INIT\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo2] UNINIT -> NEW\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo2] NEW -> IDLE\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo3] INIT -> INITED\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo3] INITED -> FLUSH\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo2] IDLE -> INIT\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo] UNINIT -> NEW\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo] NEW -> IDLE\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo2] INIT -> INITED\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo2] INITED -> FLUSH\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo] IDLE -> INIT\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo] INIT -> INITED\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo] INITED -> FLUSH\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo] FLUSH -> RUN\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo2] FLUSH -> RUN\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo3] FLUSH -> RUN\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo] RUN -> PAUSE\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo2] RUN -> PAUSE\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo3] RUN -> PAUSE\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo3] PAUSE -> INITED\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo2] PAUSE -> INITED\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo] PAUSE -> INITED\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo] INITED -> FLUSH\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo] FLUSH -> RUN\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo3] INITED -> FLUSH\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo2] INITED -> FLUSH\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo2] FLUSH -> RUN\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo3] FLUSH -> RUN\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo] RUN -> STOPPING\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo2] RUN -> STOPPING\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo3] RUN -> STOPPING\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo3] STOPPING -> STOPPED\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo2] STOPPING -> STOPPED\n" +
+                      "[test.xiphis.utils.app.TestModule$ModFoo] STOPPING -> STOPPED\n",
+              stateChanges.toString());
+      registry.shutdown();
+      registry.awaitTermination();
+    }
+
 }

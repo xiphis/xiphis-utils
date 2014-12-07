@@ -13,6 +13,7 @@
 package org.xiphis.utils.app;
 
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 import org.xiphis.utils.common.ConcurrentIdentityHashMap;
 import org.xiphis.utils.common.Logger;
@@ -25,8 +26,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static java.lang.String.format;
 
 /**
  * @author atcurtis
@@ -47,7 +46,7 @@ public class ModuleInfo<M extends Module>
   ModuleInfo(Class<M> moduleClass, Registry<?> registry)
       throws ClassNotFoundException
   {
-    LOG.info(format("ModuleInfo<%s>", moduleClass.getName()));
+    LOG.debug("ModuleInfo<{}>", moduleClass.getName());
     _moduleClass = moduleClass;
     _implementationClass = Registry.getImplementationClass(moduleClass);
     _moduleInstance = registry.newPromise();
@@ -99,7 +98,7 @@ public class ModuleInfo<M extends Module>
   private void handleNew(Registry<?> registry, Runnable complete)
   {
     registry.submit(() -> {
-      LOG.info(format("[%s] Constructing class %s", getModuleName(), _implementationClass.getName()));
+      LOG.trace("[{}] Constructing class {}", getModuleName(), _implementationClass.getName());
       try
       {
         Constructor<? extends M> constructor = _implementationClass.getConstructor(Registry.class);
@@ -112,7 +111,7 @@ public class ModuleInfo<M extends Module>
     }).addListener((Future<M> future) -> {
       if (future.isSuccess())
       {
-        LOG.info(format("[%s] Class %s constructed", getModuleName(), future.getNow().getClass().getName()));
+        LOG.trace("[{}] Class {} constructed", getModuleName(), future.getNow().getClass().getName());
         registry.register(future.getNow(), ModuleInfo.this);
         _moduleInstanceFuture = registry.newSucceededFuture(future.getNow());
         _moduleInstance.setSuccess(future.getNow());
@@ -120,7 +119,7 @@ public class ModuleInfo<M extends Module>
       }
       else
       {
-        LOG.error(format("[%s] Error constructing instance", getModuleName()), future.cause());
+        LOG.error("[{}] Error constructing instance", getModuleName(), future.cause());
         expectAndSet(registry, ModuleState.NEW, ModuleState.FAILED, NOP);
       }
     });
@@ -147,8 +146,8 @@ public class ModuleInfo<M extends Module>
           case FAILED:
           case STOPPED:
           case STOPPING:
-            LOG.error(format("[%s] Depends upon %s which is in %s state.",
-                             getModuleName(), mod.getModuleName(), state));
+            LOG.error("[{}] Depends upon {} which is in {} state.",
+                      getModuleName(), mod.getModuleName(), state);
             return null;
 
           case UNINIT:
@@ -175,26 +174,26 @@ public class ModuleInfo<M extends Module>
 
         if (notReady.get() > 0)
         {
-          LOG.info(format("[%s] Not ready. Waiting on Promise", getModuleName()));
+          LOG.trace("[{}] Not ready. Waiting on Promise", getModuleName());
           ready.addListener(future -> self.call());
           return null;
         }
 
         registry.submit(() -> {
           Promise<Void> promise = registry.newPromise();
-          promise.addListener(future -> {
+          promise.addListener((Future<Void> future) -> {
             if (future.isSuccess())
             {
-              LOG.info(format("[%s] Init succeeded", getModuleName()));
+              LOG.trace("[{}] Init succeeded", getModuleName());
               expectAndSet(registry, ModuleState.INIT, ModuleState.INITED, complete);
             }
             else
             {
-              LOG.error(format("[%s] Init failed", getModuleName()), future.cause());
+              LOG.error("[{}] Init failed", getModuleName(), future.cause());
               expectAndSet(registry, ModuleState.INIT, ModuleState.FAILED, NOP);
             }
           });
-          LOG.info(format("[%s] Executing init", getModuleName()));
+          LOG.trace("[{}] Executing init", getModuleName());
           _moduleInstance.getNow().init(promise);
           return promise;
         });
@@ -224,6 +223,8 @@ public class ModuleInfo<M extends Module>
           {
           case RUN:
             registry.submit(() -> mod.compareAndSet(registry, ModuleState.RUN, ModuleState.PAUSE, () -> {
+              if (!registry._restartModules.contains(mod))
+                registry._restartModules.add(mod);
               if (notReady.decrementAndGet() == 0)
                 ready.setSuccess(null);
             }));
@@ -254,8 +255,8 @@ public class ModuleInfo<M extends Module>
           case FAILED:
           case STOPPED:
           case STOPPING:
-            LOG.error(format("[%s] Depends upon %s which is in %s state.",
-                             getModuleName(), mod.getModuleName(), state));
+            LOG.error("[{}] Depends upon {} which is in {} state.",
+                      getModuleName(), mod.getModuleName(), state);
             return null;
 
           case UNINIT:
@@ -298,26 +299,47 @@ public class ModuleInfo<M extends Module>
 
         if (notReady.get() > 0)
         {
-          LOG.info(format("[%s] Not ready. Waiting on Promise", getModuleName()));
+          LOG.trace("[{}] Not ready. Waiting on Promise", getModuleName());
           ready.addListener(future -> self.call());
           return null;
         }
 
         registry.submit(() -> {
           Promise<Void> promise = registry.newPromise();
-          promise.addListener(future -> {
+          promise.addListener((Future<Void> future) -> {
             if (future.isSuccess())
             {
-              LOG.info(format("[%s] Flush succeeded", getModuleName()));
-              expectAndSet(registry, ModuleState.FLUSH, ModuleState.RUN, complete);
+              LOG.trace("[{}] Flush succeeded", getModuleName());
+              expectAndSet(registry, ModuleState.FLUSH, ModuleState.RUN,  () -> {
+                complete.run();
+                GenericFutureListener<Future<Void>> restartFutureListener = new GenericFutureListener<Future<Void>>() {
+                  @Override
+                  public void operationComplete(Future<Void> voidFuture) throws Exception {
+                    ModuleInfo<? extends Module> restart;
+                    do {
+                      restart = registry._restartModules.poll();
+                    }
+                    while (restart != null && restart.getModuleState() != ModuleState.INITED);
+                    if (restart != null)
+                      registry.flush(restart._moduleClass).addListener(this);
+                  }
+                };
+                ModuleInfo<? extends Module> restart;
+                do {
+                  restart = registry._restartModules.poll();
+                }
+                while (restart != null && restart.getModuleState() != ModuleState.INITED);
+                if (restart != null)
+                  registry.flush(restart._moduleClass).addListener(restartFutureListener);
+              });
             }
             else
             {
-              LOG.error(format("[%s] Flush failed", getModuleName()), future.cause());
+              LOG.error("[{}] Flush failed", getModuleName(), future.cause());
               expectAndSet(registry, ModuleState.FLUSH, ModuleState.FAILED, NOP);
             }
           });
-          LOG.info(format("[%s] Executing Flush", getModuleName()));
+          LOG.trace("[{}] Executing Flush", getModuleName());
           _moduleInstance.getNow().flush(promise);
           return promise;
         });
@@ -346,6 +368,8 @@ public class ModuleInfo<M extends Module>
           {
           case RUN:
             registry.submit(() -> mod.compareAndSet(registry, ModuleState.RUN, ModuleState.PAUSE, () -> {
+              if (!registry._restartModules.contains(mod))
+                registry._restartModules.add(mod);
               if (notReady.decrementAndGet() == 0)
                 ready.setSuccess(null);
             }));
@@ -370,26 +394,26 @@ public class ModuleInfo<M extends Module>
 
         if (notReady.get() > 0)
         {
-          LOG.info(format("[%s] Not ready. Waiting on Promise", getModuleName()));
+          LOG.trace("[{}] Not ready. Waiting on Promise", getModuleName());
           ready.addListener(future -> self.call());
           return null;
         }
 
         registry.submit(() -> {
           Promise<Void> promise = registry.newPromise();
-          promise.addListener(future -> {
+          promise.addListener((Future<Void> future) -> {
             if (future.isSuccess())
             {
-              LOG.info(format("[%s] Pause succeeded", getModuleName()));
+              LOG.trace("[{}] Pause succeeded", getModuleName());
               expectAndSet(registry, ModuleState.PAUSE, ModuleState.INITED, complete);
             }
             else
             {
-              LOG.error(format("[%s] Pause failed", getModuleName()), future.cause());
+              LOG.error("[{}] Pause failed", getModuleName(), future.cause());
               expectAndSet(registry, ModuleState.PAUSE, ModuleState.FAILED, NOP);
             }
           });
-          LOG.info(format("[%s] Executing pause", getModuleName()));
+          LOG.trace("[{}] Executing pause", getModuleName());
           _moduleInstance.getNow().pause(promise);
           return promise;
         });
@@ -453,26 +477,26 @@ public class ModuleInfo<M extends Module>
 
         if (notReady.get() > 0)
         {
-          LOG.info(format("[%s] Not ready. Waiting on Promise", getModuleName()));
+          LOG.trace("[{}] Not ready. Waiting on Promise", getModuleName());
           ready.addListener(future -> self.call());
           return null;
         }
 
         registry.submit(() -> {
           Promise<Void> promise = registry.newPromise();
-          promise.addListener(future -> {
+          promise.addListener((Future<Void> future) -> {
             if (future.isSuccess())
             {
-              LOG.info(format("[%s] Stop succeeded", getModuleName()));
+              LOG.trace("[{}] Stop succeeded", getModuleName());
               expectAndSet(registry, ModuleState.STOPPING, ModuleState.STOPPED, complete);
             }
             else
             {
-              LOG.error(format("[%s] Stop failed", getModuleName()), future.cause());
+              LOG.error("[{}] Stop failed", getModuleName(), future.cause());
               expectAndSet(registry, ModuleState.STOPPING, ModuleState.FAILED, NOP);
             }
           });
-          LOG.info(format("[%s] Executing stop", getModuleName()));
+          LOG.trace("[{}] Executing stop", getModuleName());
           _moduleInstance.getNow().stop(promise);
           return promise;
         });
