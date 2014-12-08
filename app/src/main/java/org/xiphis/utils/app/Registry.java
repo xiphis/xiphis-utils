@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class Registry<Config extends Configure>
 {
   private final Logger LOG = Logger.getInstance(getClass());
+  private static final ClassLoader CLASSLOADER = Thread.currentThread().getContextClassLoader();
 
   /**
    * Wrapper around {@link #getDependencies(Class)}.
@@ -246,13 +247,12 @@ public class Registry<Config extends Configure>
    *
    * @param moduleClass module
    * @return its dependencies
+   * @throws java.lang.ClassNotFoundException when unable to determine implementation class.
    */
   public static List<Class<? extends Module>> getDependencies(Class<? extends Module> moduleClass)
       throws ClassNotFoundException
   {
-    Class<? extends Module> implClass = moduleClass;
-    if (moduleClass.isAnnotationPresent(Implementation.class))
-      implClass = moduleClass.getAnnotation(Implementation.class).value().asSubclass(moduleClass);
+    Class<? extends Module> implClass = getImplementationClass(moduleClass);
     Depends[] dependencies = implClass.getAnnotationsByType(Depends.class);
     if (dependencies == null || dependencies.length == 0)
       return Collections.emptyList();
@@ -282,15 +282,28 @@ public class Registry<Config extends Configure>
   public static <M extends Module> Class<? extends M> getImplementationClass(Class<M> moduleClass)
       throws ClassNotFoundException
   {
-    Class<? extends M> implClazz;
-    if (moduleClass.isAnnotationPresent(Implementation.class))
-      implClazz = moduleClass.getAnnotation(Implementation.class).value().asSubclass(moduleClass);
-    else
+    Class<? extends M> implClazz = moduleClass;
+    String implClazzName = System.getProperty(moduleClass.getName());
+
+    if (implClazzName == null)
     {
-      String defaultClazzName = moduleClass.isAnnotationPresent(ImplementationClassName.class) ?
-                                moduleClass.getAnnotation(ImplementationClassName.class).value() : null;
-      String implClazzName = System.getProperty(moduleClass.getName(), defaultClazzName);
-      implClazz = implClazzName != null ? Class.forName(implClazzName).asSubclass(moduleClass) : moduleClass;
+      if (moduleClass.isAnnotationPresent(Implementation.class))
+        implClazz = moduleClass.getAnnotation(Implementation.class).value().asSubclass(moduleClass);
+      else
+      if (moduleClass.isAnnotationPresent(ImplementationClassName.class))
+        implClazzName = moduleClass.getAnnotation(ImplementationClassName.class).value();
+    }
+
+    if (implClazzName != null && !implClazzName.isEmpty())
+    {
+      ClassLoader classLoader = CLASSLOADER;
+      if (classLoader == null)
+        classLoader = Thread.currentThread().getContextClassLoader();
+
+      if (classLoader != null)
+        implClazz = Class.forName(implClazzName, false, classLoader).asSubclass(moduleClass);
+      else
+        implClazz = Class.forName(implClazzName).asSubclass(moduleClass);
     }
 
     if (implClazz.isInterface())

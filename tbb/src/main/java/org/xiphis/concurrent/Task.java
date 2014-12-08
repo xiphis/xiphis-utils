@@ -346,7 +346,7 @@ public abstract class Task
    * Note that this increases the stack depth.
    * @param context execution context
    * @param tasks tasks to execute
-   * @throws InterruptedException
+   * @throws InterruptedException if interrupted
    */
   public static void spawnRootAndWait(TaskGroupContext context, Task... tasks)
       throws InterruptedException
@@ -361,7 +361,7 @@ public abstract class Task
    * Note that this increases the stack depth.
    * @param context execution context
    * @param tasks tasks to execute
-   * @throws InterruptedException
+   * @throws InterruptedException if interrupted
    */
   public static void spawnRootAndWait(TaskGroupContext context, List<Task> tasks)
       throws InterruptedException
@@ -506,6 +506,7 @@ public abstract class Task
    *
    * @param <T> Generic type of Task {@link Factory}
    * @param cls Instance of Task {@link Factory}. Lambda can be used here.
+   * @param arguments arguments for the task factory.
    * @return  a task initialized as a child.
    */
   public final <T extends Task> T allocateChild(Factory<T> cls, Object... arguments)
@@ -523,6 +524,7 @@ public abstract class Task
    *
    * @param <T> Generic type of Task {@link Factory}
    * @param cls Instance of Task {@link Factory}. Lambda can be used here.
+   * @param arguments arguments for the task factory.
    * @return a task initialized as a continuation.
    */
   protected final <T extends Task> T allocateContinuation(Factory<T> cls, Object... arguments)
@@ -543,6 +545,7 @@ public abstract class Task
    *
    * @param <T> Generic type of Task {@link Factory}
    * @param cls Instance of Task {@link Factory}. Lambda can be used here.
+   * @param arguments arguments for the task factory.
    * @param parent Parent.
    * @return a task initialized as a child.
    */
@@ -1192,6 +1195,7 @@ public abstract class Task
    * <p>Invoked before method execute() runs, if task is stolen, or task has
    * affinity but will be executed on another thread.</p>
    * <p>The default action does nothing.</p>
+   * @param my_affinity_id affinity id
    */
   public void noteAffinity(int my_affinity_id)
   {

@@ -488,6 +488,7 @@ public class UnfairEventExecutorGroup extends DefaultEventExecutorGroup
            * @throws NullPointerException if the specified array is null
            */
           @Override
+          @SuppressWarnings("unchecked")
           public <T> T[] toArray(T[] a)
           {
             ArrayList<T> list = new ArrayList<>();

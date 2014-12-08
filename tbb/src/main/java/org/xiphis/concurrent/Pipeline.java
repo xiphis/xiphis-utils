@@ -66,41 +66,41 @@ public class Pipeline<T>
   /**
    * Add filter to end of pipeline.
    *
-   * @param filter_
+   * @param filter filter
    */
-  public final void addFilter(Filter<T> filter_)
+  public final void addFilter(Filter<T> filter)
   {
     {
-      assert filter_.prev_filter_in_pipeline == filter_.not_in_pipeline() : "filter already part of pipeline?";
-      assert filter_.next_filter_in_pipeline == filter_.not_in_pipeline() : "filter already part of pipeline?";
+      assert filter.prev_filter_in_pipeline == filter.not_in_pipeline() : "filter already part of pipeline?";
+      assert filter.next_filter_in_pipeline == filter.not_in_pipeline() : "filter already part of pipeline?";
       assert _endCounter == null : "invocation of add_filter on running pipeline";
     }
-    filter_.my_pipeline = this;
-    filter_.prev_filter_in_pipeline = _filterEnd;
+    filter.my_pipeline = this;
+    filter.prev_filter_in_pipeline = _filterEnd;
     if (_filterList == null)
     {
-      _filterList = filter_;
+      _filterList = filter;
     }
     else
     {
-      _filterEnd.next_filter_in_pipeline = filter_;
+      _filterEnd.next_filter_in_pipeline = filter;
     }
-    filter_.next_filter_in_pipeline = null;
-    _filterEnd = filter_;
+    filter.next_filter_in_pipeline = null;
+    _filterEnd = filter;
 
-    if (filter_.isSerial())
+    if (filter.isSerial())
     {
-      if (filter_.isBound())
+      if (filter.isBound())
       {
         _hasThreadBoundFilters = true;
       }
-      filter_.input_buffer = new OrderedBuffer<>(filter_.isOrdered(), filter_.isBound());
+      filter.input_buffer = new OrderedBuffer<>(filter.isOrdered(), filter.isBound());
     }
     else
     {
-      if (filter_.prev_filter_in_pipeline != null && filter_.prev_filter_in_pipeline.isBound())
+      if (filter.prev_filter_in_pipeline != null && filter.prev_filter_in_pipeline.isBound())
       {
-        filter_.input_buffer = new OrderedBuffer<>(false, false);
+        filter.input_buffer = new OrderedBuffer<>(false, false);
       }
     }
 
@@ -109,7 +109,7 @@ public class Pipeline<T>
   /**
    * Run the pipeline to completion.
    *
-   * @param max_number_of_live_tokens
+   * @param max_number_of_live_tokens max live tokens
    */
   public final void run(int max_number_of_live_tokens)
   {
@@ -120,8 +120,8 @@ public class Pipeline<T>
   /**
    * Run the pipeline to completion with user-supplied context.
    *
-   * @param max_number_of_live_tokens
-   * @param context
+   * @param max_number_of_live_tokens max live tokens
+   * @param context Thread execution context
    */
   public final void run(int max_number_of_live_tokens, TaskGroupContext context)
   {

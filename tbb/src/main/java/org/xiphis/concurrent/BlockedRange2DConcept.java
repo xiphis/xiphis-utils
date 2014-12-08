@@ -84,7 +84,7 @@ public final class BlockedRange2DConcept<RowValue extends RangeConcept<RowValue>
     /**
      * Determines size of this range.
      *
-     * @return
+     * @return size
      */
     @Override
     public int size()
@@ -106,7 +106,7 @@ public final class BlockedRange2DConcept<RowValue extends RangeConcept<RowValue>
     /**
      * Test if range can be partitioned into two subranges.
      *
-     * @return
+     * @return {@code true} if divisible
      */
     @Override
     public boolean isDivisible()

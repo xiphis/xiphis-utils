@@ -81,7 +81,7 @@ public class Application<M extends MainModule>
 
   /**
    * Handler for {@code --help} command line.
-   * @throws org.xiphis.utils.common.SystemExit
+   * @throws org.xiphis.utils.common.SystemExit always
    */
   @CLIShortName('?')
   @CLILongName("help")
@@ -206,7 +206,8 @@ public class Application<M extends MainModule>
   }
 
   /**
-   * @throws org.xiphis.utils.common.SystemExit
+   * Handler for {@code --version} command line parameter.
+   * @throws org.xiphis.utils.common.SystemExit always
    */
   @CLILongName("version")
   @CLIDescription("Print the version number and exit.")
@@ -222,9 +223,9 @@ public class Application<M extends MainModule>
   }
 
   /**
-   *
-   * @param varName
-   * @param value
+   * Handler for {@code -D var:value} command line parameters
+   * @param varName Var name
+   * @param value Var value
    */
   @CLIShortName('D')
   @CLILongName("set-var")
@@ -340,14 +341,14 @@ public class Application<M extends MainModule>
    * Main method implementation.
    *
    * <p>Typical usage:
-   * <pre>
+   * <blockquote><pre>{@code
    *   public static void main(String[] args)
    *   {
-   *     System.exit(new Application&lt;&gt;(MyApplicationModule.class).main(args));
+   *     System.exit(new Application<>(MyApplicationModule.class).main(args));
    *   }
-   * </pre>
-   * @param args
-   * @return
+   * }</pre></blockquote>
+   * @param args arguments for processing.
+   * @return result of {@link org.xiphis.utils.app.MainModule#main(org.xiphis.utils.app.Application, String[])}
    */
   public int main(String[] args)
   {

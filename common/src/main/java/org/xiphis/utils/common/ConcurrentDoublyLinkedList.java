@@ -168,6 +168,7 @@ public class ConcurrentDoublyLinkedList<E> extends AbstractCollection<E>
   /**
    * Constructs an empty deque.
    */
+  @SuppressWarnings("unchecked")
   public ConcurrentDoublyLinkedList() {
     ConcurrentDoublyLinkedNode h = new ConcurrentDoublyLinkedNode(null, null, null);
     ConcurrentDoublyLinkedNode t = new ConcurrentDoublyLinkedNode(null, null, h);

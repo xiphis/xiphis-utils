@@ -260,10 +260,10 @@ public final class Parallel
   }
 
   /**
-   * @param <R>
-   * @param <B>
-   * @param range
-   * @param body
+   * @param <R> type of range
+   * @param <B> type of task
+   * @param range range
+   * @param body task
    */
   public static <R extends RangeConcept<R>.Range, B extends ScanBody<R, B>> //
   void parallelScan(R range, B body)
@@ -273,11 +273,11 @@ public final class Parallel
   }
 
   /**
-   * @param <R>
-   * @param <B>
-   * @param range
-   * @param body
-   * @param context
+   * @param <R> type of range
+   * @param <B> type of task
+   * @param range range
+   * @param body task
+   * @param context thread context
    */
   public static <R extends RangeConcept<R>.Range, B extends ScanBody<R, B>> //
   void parallelScan(R range, B body, TaskGroupContext context)
@@ -288,12 +288,12 @@ public final class Parallel
   // public static methods
 
   /**
-   * @param <R>
-   * @param <B>
-   * @param <P>
-   * @param range
-   * @param body
-   * @param partitioner
+   * @param <R> type of range
+   * @param <B> type of task
+   * @param <P> type of partitioner
+   * @param range range
+   * @param body task
+   * @param partitioner partitioner
    */
   public static <R extends RangeConcept<R>.Range, B extends ScanBody<R, B>, P extends PartitionerConcept<R, P>.Partitioner> //
   void parallelScan(R range, B body, P partitioner)
@@ -303,13 +303,13 @@ public final class Parallel
   }
 
   /**
-   * @param <R>
-   * @param <B>
-   * @param <P>
-   * @param range
-   * @param body
-   * @param partitioner
-   * @param context
+   * @param <R> type of range
+   * @param <B> type of task
+   * @param <P> type of partitioner
+   * @param range range
+   * @param body task
+   * @param partitioner partitioner
+   * @param context thread context
    */
   public static <R extends RangeConcept<R>.Range, B extends ScanBody<R, B>, P extends PartitionerConcept<R, P>.Partitioner> //
   void parallelScan(R range, B body, P partitioner, TaskGroupContext context)
@@ -336,7 +336,8 @@ public final class Parallel
         }
       }
 
-      parallelFor(new IntRangeConcept().newInstance(k + 1, end), new QuickSortPretestBody<>(array, comp),
+      CloneableBody<IntRangeConcept.IntRange, QuickSortPretestBody<T>> body = new QuickSortPretestBody<>(array, comp);
+      parallelFor(new IntRangeConcept().newInstance(k + 1, end), body,
                   new AutoPartitionerConcept<IntRangeConcept.IntRange>().clone(null), my_context);
 
       if (!my_context.isGroupExecutionCancelled())
@@ -359,11 +360,11 @@ public final class Parallel
   }
 
   /**
-   * @param <T>
-   * @param array
-   * @param begin
-   * @param end
-   * @param comp
+   * @param <T> type of array element
+   * @param array array to sort
+   * @param begin start of range
+   * @param end end of range
+   * @param comp sort comparator
    */
   public static <T> void parallelSort(T[] array, int begin, int end, Comparator<T> comp)
   {
@@ -371,9 +372,9 @@ public final class Parallel
   }
 
   /**
-   * @param <T>
-   * @param array
-   * @param comp
+   * @param <T> type of array element
+   * @param array array to sort
+   * @param comp sort comparator
    */
   public static <T> void parallelSort(T[] array, Comparator<T> comp)
   {
@@ -381,10 +382,10 @@ public final class Parallel
   }
 
   /**
-   * @param <T>
-   * @param array
-   * @param begin
-   * @param end
+   * @param <T> type of array element
+   * @param array array to sort
+   * @param begin start of range
+   * @param end end of range
    */
   public static <T extends Comparable<T>> void parallelSort(T[] array, int begin, int end)
   {
@@ -392,8 +393,8 @@ public final class Parallel
   }
 
   /**
-   * @param <T>
-   * @param array
+   * @param <T> type of array element
+   * @param array array to sort
    */
   public static <T extends Comparable<T>> void parallelSort(T[] array)
   {
@@ -410,7 +411,7 @@ public final class Parallel
     /**
      * Apply body to range
      *
-     * @param range
+     * @param range range
      */
     void apply(R range);
   }
@@ -426,7 +427,7 @@ public final class Parallel
      * Split the range. Must be able to run the apply() and join() methods
      * concurrently.
      *
-     * @return
+     * @return range
      */
     B split();
 
@@ -434,7 +435,7 @@ public final class Parallel
      * Join results. The result in rhs should be merged into the result of
      * this.
      *
-     * @param rhs
+     * @param rhs result to join
      */
     void join(B rhs);
   }
@@ -444,14 +445,14 @@ public final class Parallel
     /**
      * Pre-process iterations for range.
      *
-     * @param range
+     * @param range range
      */
     void prescan(R range);
 
     /**
      * Split range so that they can accumulate seperately
      *
-     * @return
+     * @return split ScanBody
      */
     B split();
 
@@ -459,14 +460,14 @@ public final class Parallel
      * Merge preprocessing state of a into this, where a was created earlier
      * by using split().
      *
-     * @param a
+     * @param a ScanBody to join
      */
     void reverseJoin(B a);
 
     /**
      * Assign state of b to this
      *
-     * @param b
+     * @param b value
      */
     void assign(B b);
   }
@@ -651,8 +652,8 @@ public final class Parallel
         // and allows users to handle exceptions safely by wrapping
         // parallel_for in the try-block.
         TaskGroupContext context = new TaskGroupContext();
-        Task.spawnRootAndWait(Task.allocateRoot(context,
-                                                arguments -> new StartReduce<R, B, P>(range, body, partitioner)));
+        Factory<Task> factory = arguments -> new StartReduce<>(range, body, partitioner);
+        Task.spawnRootAndWait(Task.allocateRoot(context, factory));
       }
     }
 
@@ -661,8 +662,8 @@ public final class Parallel
     {
       if (!range.isEmpty())
       {
-        Task.spawnRootAndWait(Task.allocateRoot(context,
-                                                arguments -> new StartReduce<R, B, P>(range, body, partitioner)));
+        Factory<Task> factory = arguments -> new StartReduce<>(range, body, partitioner);
+        Task.spawnRootAndWait(Task.allocateRoot(context, factory));
       }
     }
 

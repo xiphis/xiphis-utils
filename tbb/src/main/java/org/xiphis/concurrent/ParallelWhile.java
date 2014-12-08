@@ -37,8 +37,8 @@ public class ParallelWhile<T>
   }
 
   /**
-   * @param stream
-   * @param body
+   * @param stream stream source
+   * @param body body
    */
   public void run(final Stream<T> stream, Body<T> body)
   {
@@ -55,7 +55,7 @@ public class ParallelWhile<T>
   }
 
   /**
-   * @param item
+   * @param item item
    */
   public void add(final T item)
   {
@@ -66,26 +66,26 @@ public class ParallelWhile<T>
   }
 
   /**
-   * @param <T>
+   * @param <T> type of item
    * @author atcurtis
    */
   public interface Body<T>
   {
     /**
-     * @param item
+     * @param item item
      */
     void apply(T item);
   }
 
   /**
-   * @param <T>
+   * @param <T> type of item
    * @author atcurtis
    */
   public interface Stream<T>
   {
     /**
-     * @param item
-     * @return
+     * @param item holder for item
+     * @return true if item available
      */
     boolean popIfPresent(T[] item);
   }
