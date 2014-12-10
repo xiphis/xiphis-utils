@@ -17,6 +17,8 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -25,11 +27,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.text.Format;
 import java.text.ParsePosition;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -44,7 +44,45 @@ public final class Utils
   private static final sun.misc.Unsafe UNSAFE;
   private static final Map<Class<?>, Filter<?,String>> PRIMATIVE_MAP;
 
+  private static final Properties PROPERTIES;
+
   public static final int PROCESSORS = Runtime.getRuntime().availableProcessors();
+
+  static
+  {
+    try (InputStream in = Utils.class.getResourceAsStream("/org.xiphis.utils.properties"))
+    {
+      PROPERTIES = new Properties();
+      PROPERTIES.load(in);
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to read properties file", e);
+    }
+  }
+
+
+  public static String getBuildVersion()
+  {
+    return PROPERTIES.getProperty("build.version", "unknown");
+  }
+
+  public static String getBuildUser()
+  {
+    return PROPERTIES.getProperty("build.user", "unknown");
+  }
+
+  public static String getBuildGitCommit()
+  {
+    return PROPERTIES.getProperty("build.git-sha-1", "unknown");
+  }
+
+  public static LocalDateTime getBuildTime()
+  {
+    String timestamp = PROPERTIES.getProperty("build.time");
+    if (timestamp != null)
+      return LocalDateTime.parse(timestamp, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    else
+      return null;
+  }
 
   public static void Yield()
   {

@@ -11,6 +11,8 @@
 
     <properties>
         <project.build.sourceEncoding>US-ASCII</project.build.sourceEncoding>
+        <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ssXXX</maven.build.timestamp.format>
+        <build.timestamp>${maven.build.timestamp}</build.timestamp>
     </properties>
 
     <developers>
@@ -106,6 +108,11 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>2.10.1</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>buildnumber-maven-plugin</artifactId>
+                    <version>1.1</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -127,6 +134,18 @@
                     <parallel>methods</parallel>
                     <threadCount>10</threadCount>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>buildnumber-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>create</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
