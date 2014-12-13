@@ -20,7 +20,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>tbb</artifactId>
-    <name>Xiphis Java Thread Building Blocks</name>
+    <name>Xiphis Java TBB</name>
 
 
     <dependencies>

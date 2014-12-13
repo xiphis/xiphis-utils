@@ -20,7 +20,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>app</artifactId>
-    <name>Xiphis Java Utilities - App/Modules</name>
+    <name>App/Modules</name>
 
 
     <dependencies>

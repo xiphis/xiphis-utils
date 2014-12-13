@@ -20,7 +20,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>var</artifactId>
-    <name>Xiphis Java Utilities - Dynamic Vars</name>
+    <name>Dynamic Vars</name>
 
     <dependencies>
         <dependency>
