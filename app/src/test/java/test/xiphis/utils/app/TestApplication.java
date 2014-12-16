@@ -139,30 +139,6 @@ public class TestApplication
       Assert.assertEquals("is a\n" + "test",string);
       return 42;
     }
-
-    @Override
-    public void init(Promise<Void> promise)
-    {
-      promise.setSuccess(null);
-    }
-
-    @Override
-    public void pause(Promise<Void> promise)
-    {
-      promise.setSuccess(null);
-    }
-
-    @Override
-    public void flush(Promise<Void> promise)
-    {
-      promise.setSuccess(null);
-    }
-
-    @Override
-    public void stop(Promise<Void> promise)
-    {
-      promise.setSuccess(null);
-    }
   }
 
   @Test

@@ -18,5 +18,11 @@ package org.xiphis.utils.app;
  */
 public interface MainModule extends Module
 {
+ /**
+  *
+  * @param application Application instance
+  * @param args Command line arguments
+  * @return exit status
+  */
   int main(Application<?> application, String[] args);
 }

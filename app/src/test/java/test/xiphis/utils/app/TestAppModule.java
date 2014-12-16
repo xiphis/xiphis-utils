@@ -12,7 +12,6 @@
 
 package test.xiphis.utils.app;
 
-import io.netty.util.concurrent.Promise;
 import org.xiphis.utils.app.Application;
 import org.xiphis.utils.app.MainModule;
 
@@ -31,55 +30,5 @@ public class TestAppModule implements MainModule
   public int main(Application<?> application, String[] args)
   {
     return 0;
-  }
-
-  /**
-   * The first method called after the module is instantiated. All dependencies
-   * will have been instantiated but init may not have been called upon them.
-   *
-   * @param promise callback upon completion.
-   */
-  @Override
-  public void init(Promise<Void> promise)
-  {
-    promise.setSuccess(null);
-  }
-
-  /**
-   * Called before {@link #flush(io.netty.util.concurrent.Promise)}. If the module is active,
-   * it should suspend operations until after {@linkplain #flush(io.netty.util.concurrent.Promise)}
-   * has completed.
-   *
-   * @param promise callback upon completion.
-   */
-  @Override
-  public void pause(Promise<Void> promise)
-  {
-    promise.setSuccess(null);
-  }
-
-  /**
-   * The module should flush config and reinitialize using current config. Upon completion of
-   * this call, the module is expected to be in a running state. All dependencies should have
-   * completed flushing before invocation.
-   *
-   * @param promise callback upon completion.
-   */
-  @Override
-  public void flush(Promise<Void> promise)
-  {
-    promise.setSuccess(null);
-  }
-
-  /**
-   * The module should initiate an orderly shutdown in preparation for termination. All modules
-   * which depend on this module should have completed stopping.
-   *
-   * @param promise callback upon completion.
-   */
-  @Override
-  public void stop(Promise<Void> promise)
-  {
-    promise.setSuccess(null);
   }
 }

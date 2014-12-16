@@ -82,87 +82,17 @@ public class TestModule
   {
     @CLIShortName('v')
     public boolean verbose;
-
-    @Override
-    public void init(Promise<Void> promise)
-    {
-      promise.setSuccess(null);
-    }
-
-    @Override
-    public void pause(Promise<Void> promise)
-    {
-      promise.setSuccess(null);
-    }
-
-    @Override
-    public void flush(Promise<Void> promise)
-    {
-      promise.setSuccess(null);
-    }
-
-    @Override
-    public void stop(Promise<Void> promise)
-    {
-      promise.setSuccess(null);
-    }
   }
 
   @Depends(ModFoo.class)
   public static class ModFoo2 implements Module
   {
-    @Override
-    public void init(Promise<Void> promise)
-    {
-      promise.setSuccess(null);
-    }
-
-    @Override
-    public void pause(Promise<Void> promise)
-    {
-      promise.setSuccess(null);
-    }
-
-    @Override
-    public void flush(Promise<Void> promise)
-    {
-      promise.setSuccess(null);
-    }
-
-    @Override
-    public void stop(Promise<Void> promise)
-    {
-      promise.setSuccess(null);
-    }
   }
 
 
   @Depends(ModFoo2.class)
   public static class ModFoo3 implements Module
   {
-    @Override
-    public void init(Promise<Void> promise)
-    {
-      promise.setSuccess(null);
-    }
-
-    @Override
-    public void pause(Promise<Void> promise)
-    {
-      promise.setSuccess(null);
-    }
-
-    @Override
-    public void flush(Promise<Void> promise)
-    {
-      promise.setSuccess(null);
-    }
-
-    @Override
-    public void stop(Promise<Void> promise)
-    {
-      promise.setSuccess(null);
-    }
   }
 
   @Test

@@ -25,7 +25,9 @@ public interface Module
    * will have been instantiated but init may not have been called upon them.
    * @param promise callback upon completion.
    */
-  void init(Promise<Void> promise);
+  default void init(Promise<Void> promise) {
+    promise.setSuccess(null);
+  }
 
   /**
    * Called before {@link #flush(io.netty.util.concurrent.Promise)}. If the module is active,
@@ -33,7 +35,9 @@ public interface Module
    * has completed.
    * @param promise callback upon completion.
    */
-  void pause(Promise<Void> promise);
+  default void pause(Promise<Void> promise) {
+    promise.setSuccess(null);
+  }
 
   /**
    * The module should flush config and reinitialize using current config. Upon completion of
@@ -41,12 +45,16 @@ public interface Module
    * completed flushing before invocation.
    * @param promise callback upon completion.
    */
-  void flush(Promise<Void> promise);
+  default void flush(Promise<Void> promise) {
+    promise.setSuccess(null);
+  }
 
   /**
    * The module should initiate an orderly shutdown in preparation for termination. All modules
    * which depend on this module should have completed stopping.
    * @param promise callback upon completion.
    */
-  void stop(Promise<Void> promise);
+  default void stop(Promise<Void> promise) {
+    promise.setSuccess(null);
+  }
 }
