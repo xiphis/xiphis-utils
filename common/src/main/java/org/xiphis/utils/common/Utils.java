@@ -44,7 +44,7 @@ public final class Utils
 
   private interface ValueOf<T>
   {
-    T valueOf(String text);
+    T valueOf(CharSequence text);
   }
 
   private static final sun.misc.Unsafe UNSAFE;
@@ -94,7 +94,7 @@ public final class Utils
     PlatformDependent.throwException(ex);
   }
 
-  private static char parseChar(String arg)
+  private static char parseChar(CharSequence arg)
   {
     if (arg.length() != 1)
       throw new IllegalArgumentException("Expected only one character");
@@ -114,10 +114,10 @@ public final class Utils
    * @param arg Text to be parsed.
    * @return Parsed data.
    */
-  public static Object[] parseString(Format format, String arg)
+  public static Object[] parseString(Format format, CharSequence arg)
   {
     ParsePosition pos = new ParsePosition(0);
-    Object result = format.parseObject(arg, pos);
+    Object result = format.parseObject(arg.toString(), pos);
     if (pos.getIndex() < arg.length())
       throw new BadArgumentException("Could not pass whole argument");
     if (!result.getClass().isArray())
@@ -126,7 +126,7 @@ public final class Utils
       return (Object[]) result;
   }
 
-  public static String[] split(CharSequence source)
+  public static CharSequence[] split(CharSequence source)
   {
     LinkedList<CharSequence> parts = new LinkedList<>();
     int length = source.length();
@@ -180,10 +180,7 @@ public final class Utils
       }
       rend = i;
     }
-    String[] result = new String[parts.size()];
-    for (int i = 0; i < parts.size(); i++)
-      result[i] = parts.get(i).toString();
-    return result;
+    return parts.toArray(new CharSequence[parts.size()]);
   }
 
   /**
@@ -198,7 +195,7 @@ public final class Utils
    * @return parsed value.
    */
   @SuppressWarnings("unchecked")
-  public static <T> T parseString(Class<T> type, String arg)
+  public static <T> T parseString(Class<T> type, CharSequence arg)
   {
     if (type.isAssignableFrom(String.class))
       return (T) arg;
@@ -206,7 +203,7 @@ public final class Utils
     if (type.isArray())
     {
       Class<?> componentType = type.getComponentType();
-      String[] args = split(arg);
+      CharSequence[] args = split(arg);
       Object result = Array.newInstance(componentType, args.length);
       for (int i = 0; i < args.length; i++)
         Array.set(result, i, parseString(componentType, args[i]));
@@ -219,7 +216,7 @@ public final class Utils
 
     if (type.isEnum())
     {
-      valueOf = text -> (T) Enum.valueOf((Class)type, text);
+      valueOf = text -> (T) Enum.valueOf((Class)type, text.toString());
       VALUEOF_MAP.putIfAbsent(type, valueOf);
       return valueOf.valueOf(arg);
     }
@@ -242,7 +239,7 @@ public final class Utils
         valueOf = text -> {
           try
           {
-            return (T) method.invoke(null, text);
+            return (T) method.invoke(null, text.toString());
           }
           catch (IllegalAccessException e)
           {
@@ -268,7 +265,7 @@ public final class Utils
         valueOf = text -> {
           try
           {
-            return constructor.newInstance(text);
+            return constructor.newInstance(text.toString());
           }
           catch (InstantiationException | InvocationTargetException e)
           {
@@ -338,14 +335,14 @@ public final class Utils
   static
   {
     VALUEOF_MAP = new ConcurrentIdentityHashMap<>();
-    VALUEOF_MAP.put(Byte.TYPE, Byte::parseByte);
-    VALUEOF_MAP.put(Short.TYPE, Short::parseShort);
-    VALUEOF_MAP.put(Integer.TYPE, Integer::parseInt);
-    VALUEOF_MAP.put(Long.TYPE, Long::parseLong);
+    VALUEOF_MAP.put(Byte.TYPE, text -> Byte.parseByte(text.toString()));
+    VALUEOF_MAP.put(Short.TYPE, text -> Short.parseShort(text.toString()));
+    VALUEOF_MAP.put(Integer.TYPE, text -> Integer.parseInt(text.toString()));
+    VALUEOF_MAP.put(Long.TYPE, text -> Long.parseLong(text.toString()));
     VALUEOF_MAP.put(Character.TYPE, Utils::parseChar);
-    VALUEOF_MAP.put(Double.TYPE, Double::parseDouble);
-    VALUEOF_MAP.put(Float.TYPE, Float::parseFloat);
-    VALUEOF_MAP.put(Boolean.TYPE, Boolean::parseBoolean);
+    VALUEOF_MAP.put(Double.TYPE, text -> Double.parseDouble(text.toString()));
+    VALUEOF_MAP.put(Float.TYPE, text -> Float.parseFloat(text.toString()));
+    VALUEOF_MAP.put(Boolean.TYPE, text -> Boolean.parseBoolean(text.toString()));
 
     try (InputStream in = Utils.class.getResourceAsStream("/org.xiphis.utils.properties"))
     {
