@@ -16,6 +16,7 @@ import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
+import io.netty.util.internal.PlatformDependent;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,24 +42,18 @@ public final class Utils
 {
   private Utils() { }
 
+  private interface ValueOf<T>
+  {
+    T valueOf(String text);
+  }
+
   private static final sun.misc.Unsafe UNSAFE;
-  private static final Map<Class<?>, Filter<?,String>> PRIMATIVE_MAP;
+  //private static final Map<Class<?>, Filter<?,String>> PRIMATIVE_MAP;
+  private static final ConcurrentIdentityHashMap<Class<?>, ValueOf<?>> VALUEOF_MAP;
 
   private static final Properties PROPERTIES;
 
   public static final int PROCESSORS = Runtime.getRuntime().availableProcessors();
-
-  static
-  {
-    try (InputStream in = Utils.class.getResourceAsStream("/org.xiphis.utils.properties"))
-    {
-      PROPERTIES = new Properties();
-      PROPERTIES.load(in);
-    } catch (IOException e) {
-      throw new RuntimeException("Failed to read properties file", e);
-    }
-  }
-
 
   public static String getBuildVersion()
   {
@@ -96,7 +91,7 @@ public final class Utils
 
   static void rethrow(Throwable ex)
   {
-    UNSAFE.throwException(ex);
+    PlatformDependent.throwException(ex);
   }
 
   private static char parseChar(String arg)
@@ -131,6 +126,66 @@ public final class Utils
       return (Object[]) result;
   }
 
+  public static String[] split(CharSequence source)
+  {
+    LinkedList<CharSequence> parts = new LinkedList<>();
+    int length = source.length();
+    int rstart = -1, rend = -1;
+    for (int i = 0, start = 0; i <= length; i++)
+    {
+      char ch, end;
+      if (i == length || (ch = source.charAt(i)) == ',')
+      {
+        if (rstart == start + 1 && rend == i - 1)
+          parts.add(source.subSequence(rstart, rend));
+        else
+          parts.add(source.subSequence(start, i));
+        start = i + 1; rstart = rend = -1;
+        continue;
+      }
+      switch (end = ch)
+      {
+      case '\\':
+        i++;
+        continue;
+      case '(':
+        end = ')';
+        break;
+      case '{':
+        end = '}';
+        break;
+      case '[':
+        end = ']';
+        break;
+      case '"':
+      case '\'':
+        break;
+      default:
+        continue;
+      }
+      rstart = i+1;
+      int depth = 1;
+      while (++i < length)
+      {
+        if (source.charAt(i) == '\\')
+        {
+          i++;
+          continue;
+        }
+        if (end != ch && source.charAt(i) == ch)
+          depth++;
+        else
+        if (source.charAt(i) == end && --depth == 0)
+          break;
+      }
+      rend = i;
+    }
+    String[] result = new String[parts.size()];
+    for (int i = 0; i < parts.size(); i++)
+      result[i] = parts.get(i).toString();
+    return result;
+  }
+
   /**
    * Attempt to parse the supplied text and convert into the specified class.
    * Enums will be parsed using their {@code valueOf()} method.
@@ -148,41 +203,25 @@ public final class Utils
     if (type.isAssignableFrom(String.class))
       return (T) arg;
 
-    if (type.isPrimitive())
-    {
-      Filter parser = PRIMATIVE_MAP.get(type);
-      return (T) parser.call(arg);
-    }
-
     if (type.isArray())
     {
       Class<?> componentType = type.getComponentType();
-      String[] args = arg.split(",");
+      String[] args = split(arg);
       Object result = Array.newInstance(componentType, args.length);
       for (int i = 0; i < args.length; i++)
         Array.set(result, i, parseString(componentType, args[i]));
       return (T) result;
     }
 
+    ValueOf<T> valueOf = (ValueOf<T>) VALUEOF_MAP.get(type);
+    if (valueOf != null)
+      return valueOf.valueOf(arg);
+
     if (type.isEnum())
     {
-      try
-      {
-        Method method = type.getMethod("valueOf", String.class);
-        int modifier = method.getModifiers();
-        if (Modifier.isPublic(modifier) && Modifier.isStatic(modifier))
-        {
-          return (T) method.invoke(null, arg);
-        }
-      }
-      catch (NoSuchMethodException | IllegalAccessException e)
-      {
-        throw new ParserException(e);
-      }
-      catch (InvocationTargetException e)
-      {
-        throw new BadArgumentException(e.getCause());
-      }
+      valueOf = text -> (T) Enum.valueOf((Class)type, text);
+      VALUEOF_MAP.putIfAbsent(type, valueOf);
+      return valueOf.valueOf(arg);
     }
 
     for (Method method : type.getDeclaredMethods())
@@ -190,27 +229,33 @@ public final class Utils
       int modifier = method.getModifiers();
       if (!Modifier.isPublic(modifier) ||
           !Modifier.isStatic(modifier) ||
-          !method.getName().startsWith("parse") ||
+          !(method.getName().startsWith("parse") ||
+            method.getName().equals("valueOf")) ||
           method.getParameterCount() != 1 ||
           !type.isAssignableFrom(method.getReturnType()) ||
           !method.getParameterTypes()[0].isAssignableFrom(String.class))
         continue;
 
-      if ("parse".equals(method.getName()) || getSimpleName(type).startsWith(method.getName().substring(5)))
+      if ("parse".equals(method.getName()) || "valueOf".equals(method.getName()) ||
+          method.getName().startsWith("parse") && getSimpleName(type).startsWith(method.getName().substring(5)))
       {
-        try
-        {
-          System.out.println(method.getName());
-          return (T) method.invoke(null, arg);
-        }
-        catch (IllegalAccessException e)
-        {
-          throw new ParserException(e);
-        }
-        catch (InvocationTargetException e)
-        {
-          throw new BadArgumentException(e.getCause());
-        }
+        valueOf = text -> {
+          try
+          {
+            return (T) method.invoke(null, text);
+          }
+          catch (IllegalAccessException e)
+          {
+            throw new ParserException(e);
+          }
+          catch (InvocationTargetException e)
+          {
+            throw new BadArgumentException(e.getCause());
+          }
+        };
+        T result = valueOf.valueOf(arg);
+        VALUEOF_MAP.putIfAbsent(type, valueOf);
+        return result;
       }
     }
 
@@ -220,18 +265,23 @@ public final class Utils
       int modifier = constructor.getModifiers();
       if (Modifier.isPublic(modifier))
       {
-        try
-        {
-          return constructor.newInstance(arg);
-        }
-        catch (InstantiationException | InvocationTargetException e)
-        {
-          throw new BadArgumentException(e.getCause());
-        }
-        catch (IllegalAccessException e)
-        {
-          throw new ParserException(e);
-        }
+        valueOf = text -> {
+          try
+          {
+            return constructor.newInstance(text);
+          }
+          catch (InstantiationException | InvocationTargetException e)
+          {
+            throw new BadArgumentException(e.getCause());
+          }
+          catch (IllegalAccessException e)
+          {
+            throw new ParserException(e);
+          }
+        };
+        T result = valueOf.valueOf(arg);
+        VALUEOF_MAP.putIfAbsent(type, valueOf);
+        return result;
       }
     }
     catch (NoSuchMethodException ignored) { }
@@ -287,16 +337,23 @@ public final class Utils
 
   static
   {
-    Map<Class<?>, Filter<?,String>> map = new IdentityHashMap<>();
-    map.put(Byte.TYPE, Byte::parseByte);
-    map.put(Short.TYPE, Short::parseShort);
-    map.put(Integer.TYPE, Integer::parseInt);
-    map.put(Long.TYPE, Long::parseLong);
-    map.put(Character.TYPE, Utils::parseChar);
-    map.put(Double.TYPE, Double::parseDouble);
-    map.put(Float.TYPE, Float::parseFloat);
-    map.put(Boolean.TYPE, Boolean::parseBoolean);
-    PRIMATIVE_MAP = Collections.unmodifiableMap(map);
+    VALUEOF_MAP = new ConcurrentIdentityHashMap<>();
+    VALUEOF_MAP.put(Byte.TYPE, Byte::parseByte);
+    VALUEOF_MAP.put(Short.TYPE, Short::parseShort);
+    VALUEOF_MAP.put(Integer.TYPE, Integer::parseInt);
+    VALUEOF_MAP.put(Long.TYPE, Long::parseLong);
+    VALUEOF_MAP.put(Character.TYPE, Utils::parseChar);
+    VALUEOF_MAP.put(Double.TYPE, Double::parseDouble);
+    VALUEOF_MAP.put(Float.TYPE, Float::parseFloat);
+    VALUEOF_MAP.put(Boolean.TYPE, Boolean::parseBoolean);
+
+    try (InputStream in = Utils.class.getResourceAsStream("/org.xiphis.utils.properties"))
+    {
+      PROPERTIES = new Properties();
+      PROPERTIES.load(in);
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to read properties file", e);
+    }
 
     try
     {

@@ -201,9 +201,7 @@ public class ConcurrentDoublyLinkedList<E> extends AbstractCollection<E>
    *             if the specified element is <tt>null</tt>
    */
   public void addFirst(E o) {
-    checkNullArg(o);
-    while (header.append(o) == null)
-      ;
+    addFirstNode(o);
   }
 
   /**
@@ -216,9 +214,16 @@ public class ConcurrentDoublyLinkedList<E> extends AbstractCollection<E>
    *             if the specified element is <tt>null</tt>
    */
   public void addLast(E o) {
+    addLastNode(o);
+  }
+
+
+  public ConcurrentDoublyLinkedNode<E> addFirstNode(E o) {
     checkNullArg(o);
-    while (trailer.prepend(o) == null)
+    ConcurrentDoublyLinkedNode<E> node;
+    while ((node = header.append(o)) == null)
       ;
+    return node;
   }
 
   public ConcurrentDoublyLinkedNode<E> addLastNode(E o) {
@@ -265,8 +270,13 @@ public class ConcurrentDoublyLinkedList<E> extends AbstractCollection<E>
    * @return the first element of this queue, or <tt>null</tt> if empty.
    */
   public E peekFirst() {
-    ConcurrentDoublyLinkedNode<E> n = header.successor();
+    ConcurrentDoublyLinkedNode<E> n = peekFirstNode();
     return (n == null) ? null : n.getElement();
+  }
+
+  public ConcurrentDoublyLinkedNode<E> peekFirstNode() {
+    ConcurrentDoublyLinkedNode<E> n = header.successor();
+    return usable(n) ? n : null;
   }
 
   /**
@@ -276,8 +286,13 @@ public class ConcurrentDoublyLinkedList<E> extends AbstractCollection<E>
    * @return the last element of this deque, or <tt>null</tt> if empty.
    */
   public E peekLast() {
-    ConcurrentDoublyLinkedNode<E> n = trailer.predecessor();
+    ConcurrentDoublyLinkedNode<E> n = peekLastNode();
     return (n == null) ? null : n.getElement();
+  }
+
+  public ConcurrentDoublyLinkedNode<E> peekLastNode() {
+    ConcurrentDoublyLinkedNode<E> n = header.predecessor();
+    return usable(n) ? n : null;
   }
 
   /**
@@ -310,8 +325,8 @@ public class ConcurrentDoublyLinkedList<E> extends AbstractCollection<E>
    */
   public E pollFirst() {
     for (;;) {
-      ConcurrentDoublyLinkedNode<E> n = header.successor();
-      if (!usable(n))
+      ConcurrentDoublyLinkedNode<E> n = peekFirstNode();
+      if (n == null)
         return null;
       if (n.delete())
         return n.getElement();
@@ -326,8 +341,8 @@ public class ConcurrentDoublyLinkedList<E> extends AbstractCollection<E>
    */
   public E pollLast() {
     for (;;) {
-      ConcurrentDoublyLinkedNode<E> n = trailer.predecessor();
-      if (!usable(n))
+      ConcurrentDoublyLinkedNode<E> n = peekLastNode();
+      if (n == null)
         return null;
       if (n.delete())
         return n.getElement();
