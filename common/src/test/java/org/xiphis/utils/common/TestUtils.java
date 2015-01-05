@@ -108,6 +108,13 @@ public class TestUtils
     testVector.add(test("1,2,3", new Integer[] { 1, 2, 3 }));
     testVector.add(test("TEST1,TEST2,TEST1", new Foo[] { Foo.TEST1, Foo.TEST2, Foo.TEST1 }));
 
+    testVector.add(test("test1,test2\\,really,test3", new String[] { "test1", "test2\\,really", "test3"}));
+    testVector.add(test("test1,'test2,really',test3", new String[] { "test1", "test2,really", "test3"}));
+    testVector.add(test("test1,\"test2\\\"really\",test3", new String[] { "test1", "test2\\\"really", "test3"}));
+    testVector.add(test("test1,\"test2\\\"really\",test3", new String[] { "test1", "test2\\\"really", "test3"}));
+    testVector.add(test("test1,(test2,really),test3", new String[] { "test1", "test2,really", "test3"}));
+    testVector.add(test("test1,(test2(really)),test3", new String[] { "test1", "test2(really)", "test3"}));
+
     testVector.add(test("(1,2,3),{2,3,4},[3,4,5]", new int[][] {
         { 1, 2, 3 },
         { 2, 3, 4 },
