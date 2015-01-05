@@ -219,45 +219,48 @@ public final class Utils
       if (valueOf != null)
         return valueOf.valueOf(arg);
 
-      if (type.isEnum())
-        valueOf = text -> (T) Enum.valueOf((Class) type, text.toString());
-
-      for (Method method : type.getDeclaredMethods())
+      findValueOf: for (;;)
       {
-        int modifier = method.getModifiers();
-        if (!Modifier.isPublic(modifier) ||
-            !Modifier.isStatic(modifier) ||
-            !(method.getName().startsWith("parse") || method.getName().equals("valueOf")) ||
-            method.getParameterCount() != 1 ||
-            !type.isAssignableFrom(method.getReturnType()) ||
-            !method.getParameterTypes()[0].isAssignableFrom(String.class))
-          continue;
-
-        if ("parse".equals(method.getName()) || "valueOf".equals(method.getName()) ||
-            method.getName().startsWith("parse") && getSimpleName(type).startsWith(method.getName().substring(5)))
+        if (type.isEnum())
         {
-          valueOf = text -> (T) method.invoke(null, text.toString());
+          valueOf = text -> (T) Enum.valueOf((Class) type, text.toString());
           break;
         }
+
+        for (Method method : type.getDeclaredMethods())
+        {
+          int modifier = method.getModifiers();
+          if (!Modifier.isPublic(modifier) ||
+              !Modifier.isStatic(modifier) ||
+              !(method.getName().startsWith("parse") || method.getName().equals("valueOf")) ||
+              method.getParameterCount() != 1 ||
+              !type.isAssignableFrom(method.getReturnType()) ||
+              !method.getParameterTypes()[0].isAssignableFrom(String.class)) continue;
+
+          if ("parse".equals(method.getName()) || "valueOf".equals(method.getName()) ||
+              method.getName().startsWith("parse") && getSimpleName(type).startsWith(method.getName().substring(5)))
+          {
+            valueOf = text -> (T) method.invoke(null, text.toString());
+            break findValueOf;
+          }
+        }
+
+        for (Constructor<T> constructor : (Constructor<T>[]) type.getConstructors())
+        {
+          int modifier = constructor.getModifiers();
+          if (!Modifier.isPublic(modifier) ||
+              constructor.getParameterCount() != 1 ||
+              !constructor.getParameterTypes()[0].isAssignableFrom(String.class)) continue;
+          valueOf = text -> constructor.newInstance(text.toString());
+          break findValueOf;
+        }
+
+        throw new ParserException("Unable to parse type: " + type);
       }
 
-      for (Constructor<T> constructor : (Constructor<T>[]) type.getConstructors())
-      {
-        int modifier = constructor.getModifiers();
-        if (!Modifier.isPublic(modifier) ||
-            constructor.getParameterCount() != 1 ||
-            !constructor.getParameterTypes()[0].isAssignableFrom(String.class))
-          continue;
-        valueOf = text -> constructor.newInstance(text.toString());
-        break;
-      }
-
-      if (valueOf != null)
-      {
-        T value = valueOf.valueOf(arg);
-        VALUEOF_MAP.putIfAbsent(type, valueOf);
-        return value;
-      }
+      T value = valueOf.valueOf(arg);
+      VALUEOF_MAP.putIfAbsent(type, valueOf);
+      return value;
     }
     catch (IllegalAccessException e)
     {
@@ -267,8 +270,6 @@ public final class Utils
     {
       throw new ParserException(e.getCause());
     }
-
-    throw new ParserException("Unable to parse type: " + type);
   }
 
   public static <V> Future<List<? extends V>> combineFutures(EventExecutor eventExecutor, List<Future<? extends V>> futuresToCombine)
