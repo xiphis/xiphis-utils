@@ -3,7 +3,6 @@ package org.xiphis.utils.common;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
-import io.netty.util.internal.PlatformDependent;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
@@ -327,6 +326,6 @@ public final class EmptyPromise<E> implements Promise<E>
     if (cause == null) {
       return;
     }
-    PlatformDependent.throwException(cause);
+    Utils.rethrow(cause);
   }
 }

@@ -31,6 +31,7 @@ import java.text.ParsePosition;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -44,11 +45,13 @@ public final class Utils
 
   private interface ValueOf<T>
   {
-    T valueOf(CharSequence text);
+    T valueOf(CharSequence text)
+        throws InstantiationException, InvocationTargetException,
+               IllegalAccessException;
   }
 
   private static final sun.misc.Unsafe UNSAFE;
-  //private static final Map<Class<?>, Filter<?,String>> PRIMATIVE_MAP;
+
   private static final ConcurrentIdentityHashMap<Class<?>, ValueOf<?>> VALUEOF_MAP;
 
   private static final Properties PROPERTIES;
@@ -211,77 +214,59 @@ public final class Utils
     }
 
     ValueOf<T> valueOf = (ValueOf<T>) VALUEOF_MAP.get(type);
-    if (valueOf != null)
-      return valueOf.valueOf(arg);
-
-    if (type.isEnum())
-    {
-      valueOf = text -> (T) Enum.valueOf((Class)type, text.toString());
-      VALUEOF_MAP.putIfAbsent(type, valueOf);
-      return valueOf.valueOf(arg);
-    }
-
-    for (Method method : type.getDeclaredMethods())
-    {
-      int modifier = method.getModifiers();
-      if (!Modifier.isPublic(modifier) ||
-          !Modifier.isStatic(modifier) ||
-          !(method.getName().startsWith("parse") ||
-            method.getName().equals("valueOf")) ||
-          method.getParameterCount() != 1 ||
-          !type.isAssignableFrom(method.getReturnType()) ||
-          !method.getParameterTypes()[0].isAssignableFrom(String.class))
-        continue;
-
-      if ("parse".equals(method.getName()) || "valueOf".equals(method.getName()) ||
-          method.getName().startsWith("parse") && getSimpleName(type).startsWith(method.getName().substring(5)))
-      {
-        valueOf = text -> {
-          try
-          {
-            return (T) method.invoke(null, text.toString());
-          }
-          catch (IllegalAccessException e)
-          {
-            throw new ParserException(e);
-          }
-          catch (InvocationTargetException e)
-          {
-            throw new BadArgumentException(e.getCause());
-          }
-        };
-        T result = valueOf.valueOf(arg);
-        VALUEOF_MAP.putIfAbsent(type, valueOf);
-        return result;
-      }
-    }
-
     try
     {
-      Constructor<T> constructor = type.getConstructor(String.class);
-      int modifier = constructor.getModifiers();
-      if (Modifier.isPublic(modifier))
+      if (valueOf != null)
+        return valueOf.valueOf(arg);
+
+      if (type.isEnum())
+        valueOf = text -> (T) Enum.valueOf((Class) type, text.toString());
+
+      for (Method method : type.getDeclaredMethods())
       {
-        valueOf = text -> {
-          try
-          {
-            return constructor.newInstance(text.toString());
-          }
-          catch (InstantiationException | InvocationTargetException e)
-          {
-            throw new BadArgumentException(e.getCause());
-          }
-          catch (IllegalAccessException e)
-          {
-            throw new ParserException(e);
-          }
-        };
-        T result = valueOf.valueOf(arg);
+        int modifier = method.getModifiers();
+        if (!Modifier.isPublic(modifier) ||
+            !Modifier.isStatic(modifier) ||
+            !(method.getName().startsWith("parse") || method.getName().equals("valueOf")) ||
+            method.getParameterCount() != 1 ||
+            !type.isAssignableFrom(method.getReturnType()) ||
+            !method.getParameterTypes()[0].isAssignableFrom(String.class))
+          continue;
+
+        if ("parse".equals(method.getName()) || "valueOf".equals(method.getName()) ||
+            method.getName().startsWith("parse") && getSimpleName(type).startsWith(method.getName().substring(5)))
+        {
+          valueOf = text -> (T) method.invoke(null, text.toString());
+          break;
+        }
+      }
+
+      for (Constructor<T> constructor : (Constructor<T>[]) type.getConstructors())
+      {
+        int modifier = constructor.getModifiers();
+        if (!Modifier.isPublic(modifier) ||
+            constructor.getParameterCount() != 1 ||
+            !constructor.getParameterTypes()[0].isAssignableFrom(String.class))
+          continue;
+        valueOf = text -> constructor.newInstance(text.toString());
+        break;
+      }
+
+      if (valueOf != null)
+      {
+        T value = valueOf.valueOf(arg);
         VALUEOF_MAP.putIfAbsent(type, valueOf);
-        return result;
+        return value;
       }
     }
-    catch (NoSuchMethodException ignored) { }
+    catch (IllegalAccessException e)
+    {
+      throw new ParserException(e);
+    }
+    catch (InstantiationException | InvocationTargetException e)
+    {
+      throw new ParserException(e.getCause());
+    }
 
     throw new ParserException("Unable to parse type: " + type);
   }
@@ -332,6 +317,20 @@ public final class Utils
     return promise;
   }
 
+  public static <T> T call(Callable<T> callable)
+  {
+    T result = null;
+    try
+    {
+      result = callable.call();
+    }
+    catch (Exception e)
+    {
+      rethrow(e);
+    }
+    return result;
+  }
+
   static
   {
     VALUEOF_MAP = new ConcurrentIdentityHashMap<>();
@@ -352,15 +351,10 @@ public final class Utils
       throw new RuntimeException("Failed to read properties file", e);
     }
 
-    try
-    {
+    UNSAFE = call(() -> {
       Field f = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
       f.setAccessible(true);
-      UNSAFE = (sun.misc.Unsafe) f.get(null);
-    }
-    catch (Exception e)
-    {
-      throw new RuntimeException(e);
-    }
+      return (sun.misc.Unsafe) f.get(null);
+    });
   }
 }

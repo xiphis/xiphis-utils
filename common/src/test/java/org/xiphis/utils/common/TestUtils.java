@@ -3,6 +3,7 @@ package org.xiphis.utils.common;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 /**
@@ -48,6 +49,34 @@ public class TestUtils
     }
   }
 
+  public static class Clazz1
+  {
+    final String _foo;
+    public Clazz1(String foo)
+    {
+      _foo = foo;
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+      if (this == o) return true;
+      if (!(o instanceof Clazz1)) return false;
+
+      Clazz1 clazz1 = (Clazz1) o;
+
+      if (_foo != null ? !_foo.equals(clazz1._foo) : clazz1._foo != null) return false;
+
+      return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+      return _foo != null ? _foo.hashCode() : 0;
+    }
+  }
+
   @Test
   public void testParseString()
   {
@@ -84,6 +113,10 @@ public class TestUtils
         { 2, 3, 4 },
         { 3, 4, 5 }
     }));
+
+    testVector.add(test(Clazz1.class, "Hello World", new Clazz1("Hello World")));
+
+    testVector.add(test(Clazz2.class, "Hello World", Clazz2.parseClazz2("Hello World")));
 
     for (TestVector<?> test : testVector)
     {
@@ -124,6 +157,12 @@ public class TestUtils
   public void testBuildUser()
   {
     Assert.assertEquals("test_user", Utils.getBuildUser());
+  }
+
+  @Test
+  public void testBuildTime()
+  {
+    Assert.assertEquals(LocalDateTime.of(2015,1,1,1,1,59), Utils.getBuildTime());
   }
 
   @Test
