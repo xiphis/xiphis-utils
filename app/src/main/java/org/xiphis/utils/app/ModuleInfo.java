@@ -17,6 +17,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 import org.xiphis.utils.common.ConcurrentIdentityHashMap;
 import org.xiphis.utils.common.Logger;
+import org.xiphis.utils.common.Utils;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -25,7 +26,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
  * @author atcurtis
@@ -35,13 +36,17 @@ public class ModuleInfo<M extends Module>
 {
   private final static Runnable NOP = () -> { };
   private final Logger LOG = Logger.getInstance(getClass());
+  private static long SLEEP_MILLISECONDS = 100;
 
   private final Class<M> _moduleClass;
   private final Class<? extends M> _implementationClass;
-  private final AtomicReference<ModuleState> _moduleState;
+  private volatile ModuleState _moduleState;
   private final Set<ModuleInfo<? extends Module>> _dependants;
   private final Promise<M> _moduleInstance;
   private Future<M> _moduleInstanceFuture;
+
+  private static final AtomicReferenceFieldUpdater<ModuleInfo, ModuleState> _moduleStateUpdater =
+      AtomicReferenceFieldUpdater.newUpdater(ModuleInfo.class, ModuleState.class, "_moduleState");
 
   ModuleInfo(Class<M> moduleClass, Registry<?> registry)
       throws ClassNotFoundException
@@ -51,7 +56,7 @@ public class ModuleInfo<M extends Module>
     _implementationClass = Registry.getImplementationClass(moduleClass);
     _moduleInstance = registry.newPromise();
     _moduleInstanceFuture = _moduleInstance;
-    _moduleState = new AtomicReference<>(ModuleState.UNINIT);
+    _moduleState = ModuleState.UNINIT;
     _dependants = Collections.newSetFromMap(new ConcurrentIdentityHashMap<>());
   }
 
@@ -61,7 +66,7 @@ public class ModuleInfo<M extends Module>
       throw new NullPointerException();
 
     if (expect.ordinal() != value.ordinal() &&
-        _moduleState.compareAndSet(expect, value))
+        _moduleStateUpdater.compareAndSet(this, expect, value))
     {
       try
       {
@@ -159,7 +164,7 @@ public class ModuleInfo<M extends Module>
 
           case NEW:
             registry.submit(() -> {
-              Thread.sleep(100);
+              Utils.sleepUninterruptable(SLEEP_MILLISECONDS);
               if (notReady.decrementAndGet() == 0)
                 ready.setSuccess(null);
               return null;
@@ -233,7 +238,7 @@ public class ModuleInfo<M extends Module>
           case PAUSE:
           //case FLUSH:
             registry.submit(() -> {
-              Thread.sleep(100);
+              Utils.sleepUninterruptable(SLEEP_MILLISECONDS);
               if (notReady.decrementAndGet() == 0)
                 ready.setSuccess(null);
               return null;
@@ -284,7 +289,7 @@ public class ModuleInfo<M extends Module>
           case INIT:
           case FLUSH:
             registry.submit(() -> {
-              Thread.sleep(100);
+              Utils.sleepUninterruptable(SLEEP_MILLISECONDS);
               if (notReady.decrementAndGet() == 0)
                 ready.setSuccess(null);
               return null;
@@ -378,7 +383,7 @@ public class ModuleInfo<M extends Module>
           case PAUSE:
           case FLUSH:
             registry.submit(() -> {
-              Thread.sleep(100);
+              Utils.sleepUninterruptable(SLEEP_MILLISECONDS);
               if (notReady.decrementAndGet() == 0)
                 ready.setSuccess(null);
               return null;
@@ -461,7 +466,7 @@ public class ModuleInfo<M extends Module>
           case FLUSH:
           case STOPPING:
             registry.submit(() -> {
-              Thread.sleep(100);
+              Utils.sleepUninterruptable(SLEEP_MILLISECONDS);
               if (notReady.decrementAndGet() == 0)
                 ready.setSuccess(null);
               return null;
@@ -530,7 +535,7 @@ public class ModuleInfo<M extends Module>
 
   public ModuleState getModuleState()
   {
-    return _moduleState.get();
+    return _moduleState;
   }
 
   public Future<M> getInstance()
@@ -569,7 +574,7 @@ public class ModuleInfo<M extends Module>
       case INIT:
         try
         {
-          Thread.sleep(100);
+          Thread.sleep(SLEEP_MILLISECONDS);
           continue;
         }
         catch (InterruptedException e)
@@ -611,7 +616,7 @@ public class ModuleInfo<M extends Module>
       case PAUSE:
         try
         {
-          Thread.sleep(100);
+          Thread.sleep(SLEEP_MILLISECONDS);
           continue;
         }
         catch (InterruptedException e)
@@ -654,7 +659,7 @@ public class ModuleInfo<M extends Module>
       case STOPPING:
         try
         {
-          Thread.sleep(100);
+          Thread.sleep(SLEEP_MILLISECONDS);
           continue;
         }
         catch (InterruptedException e)

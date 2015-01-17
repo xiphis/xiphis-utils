@@ -87,6 +87,23 @@ public final class Utils
     Thread.yield();
   }
 
+  public static void sleepUninterruptable(long millis)
+  {
+    long now = System.currentTimeMillis();
+    long wakeup = now + millis;
+    boolean interrupted = false;
+    do {
+      try {
+        Thread.sleep(wakeup - now);
+      } catch (InterruptedException ignored) {
+        interrupted = true;
+      }
+    }
+    while ((now = System.currentTimeMillis()) < wakeup);
+    if (interrupted)
+      Thread.currentThread().interrupt();
+  }
+
   public static sun.misc.Unsafe getUnsafe()
   {
     return UNSAFE;
@@ -272,13 +289,26 @@ public final class Utils
     }
   }
 
-  public static <V> Future<List<? extends V>> combineFutures(EventExecutor eventExecutor, List<Future<? extends V>> futuresToCombine)
+  public static <V> Future<List<V>> combineFutures(EventExecutor eventExecutor, List<Future<V>> futuresToCombine)
+  {
+    return combineFutures(eventExecutor, futuresToCombine, false);
+  }
+
+  public static <V> Future<List<V>> combineFutures(EventExecutor eventExecutor, List<Future<V>> futuresToCombine, boolean interruptOnCancel)
   {
     ArrayList<Future<? extends V>> f = new ArrayList<>(futuresToCombine);
     if (f.isEmpty())
       return eventExecutor.newSucceededFuture(Collections.<V>emptyList());
 
-    Promise<List<? extends V>> promise = eventExecutor.newPromise();
+    Promise<List<V>> promise = eventExecutor.newPromise();
+
+    promise.addListener(future -> {
+      if (future.isCancelled())
+      {
+        for (Future<?> s : f)
+          s.cancel(interruptOnCancel);
+      }
+    });
 
     if (f.size() == 1)
     {
@@ -294,26 +324,27 @@ public final class Utils
 
     AtomicInteger _countDown = new AtomicInteger(f.size());
     ArrayList<V> completed = new ArrayList<>(f.size());
-    GenericFutureListener<Future<V>> listener = future -> {
-      if (future.isSuccess())
-      {
-        synchronized (completed)
+    for (int i = 0; i < f.size(); i++)
+    {
+      int index = i;
+      completed.add(null);
+      f.get(i).addListener((Future<V> future) -> {
+        if (promise.isDone())
+          return;
+        if (future.isSuccess())
         {
-          completed.add(future.getNow());
+          completed.set(index, future.getNow());
+          if (_countDown.decrementAndGet() == 0)
+          {
+            promise.setSuccess(completed);
+          }
         }
-        if (_countDown.decrementAndGet() == 0)
+        else
         {
-          promise.setSuccess(completed);
+          promise.setFailure(future.cause());
         }
-      }
-      else
-      {
-        promise.setFailure(future.cause());
-      }
-    };
-
-    for (Future<? extends V> future : f)
-      future.addListener(listener);
+      });
+    }
 
     return promise;
   }

@@ -148,7 +148,7 @@ public final class Semaphore
       {
         try
         {
-          Task.spawnRootAndWait(semaphoreContext, Task.allocateRoot(semaphoreContext, arguments -> new Task()
+          Task.spawnRootAndWait(semaphoreContext, (Task) Task.allocateRoot(semaphoreContext, arguments -> new Task()
           {
             @Override
             protected Task execute()

@@ -1,10 +1,15 @@
 package org.xiphis.utils.common;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.util.concurrent.Promise;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author atcurtis
@@ -176,5 +181,36 @@ public class TestUtils
   public void testBuildGitCommit()
   {
     Assert.assertEquals("1c68ea370b40c06fcaf7f26c8b1dba9d9caf5dea", Utils.getBuildGitCommit());
+  }
+
+  @Test
+  public void testCombineNoFuture()
+  {
+    Future<List<Void>> futures = Utils.combineFutures(GlobalEventExecutor.INSTANCE, Collections.emptyList());
+    Assert.assertTrue(futures.isSuccess());
+    Assert.assertEquals(0, futures.getNow().size());
+  }
+
+  @Test
+  public void testCombineSingleton()
+  {
+    Promise<Void> p = GlobalEventExecutor.INSTANCE.newPromise();
+    List<Future<Void>> f = Collections.singletonList(p);
+    Future<List<Void>> future = Utils.combineFutures(GlobalEventExecutor.INSTANCE, f);
+    future.awaitUninterruptibly(1);
+    Assert.assertFalse(future.isDone());
+    p.setSuccess(null);
+    future.awaitUninterruptibly(1);
+    Assert.assertTrue(future.isDone());
+    Assert.assertTrue(future.isSuccess());
+    Assert.assertEquals(1, future.getNow().size());
+
+    Throwable ex = new Exception();
+    f = Collections.singletonList(GlobalEventExecutor.INSTANCE.newFailedFuture(ex));
+    future = Utils.combineFutures(GlobalEventExecutor.INSTANCE, f);
+    future.awaitUninterruptibly(1);
+    Assert.assertTrue(future.isDone());
+    Assert.assertFalse(future.isSuccess());
+    Assert.assertSame(ex, future.cause());
   }
 }

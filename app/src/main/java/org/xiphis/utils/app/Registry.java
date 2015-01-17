@@ -188,7 +188,7 @@ public class Registry<Config extends Configure>
     return _eventExecutor.next().newFailedFuture(paramThrowable);
   }
 
-  <V> Future<List<? extends V>> combineFutures(List<Future<? extends V>> futuresToCombine)
+  <V> Future<List<V>> combineFutures(List<Future<V>> futuresToCombine)
   {
     return Utils.combineFutures(_eventExecutor.next(), futuresToCombine);
   }
@@ -434,11 +434,11 @@ public class Registry<Config extends Configure>
       LOG.info("Starting shutdown");
 
       List<ModuleInfo<? extends Module>> infos = new ArrayList<>(_modules.values());
-      List<Future<?>> futures = new ArrayList<>(infos.size());
+      List<Future<Void>> futures = new ArrayList<>(infos.size());
       for (ModuleInfo<? extends Module> info : infos)
         futures.add(info.stop(this));
 
-      combineFutures(futures).addListener((Future<List<?>> listFuture) -> {
+      combineFutures(futures).addListener((Future<List<Void>> listFuture) -> {
         if (listFuture.isSuccess()) {
           if (_eventExecutor != GlobalEventExecutor.INSTANCE) {
             LOG.debug("Shutting down EventExecutor");

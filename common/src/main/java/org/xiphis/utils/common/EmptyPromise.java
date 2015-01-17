@@ -11,6 +11,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
+ * Implementation of a {@link io.netty.util.concurrent.Promise} which has no listeners.
+ *
  * @author atcurtis
  * @since 2014-12-25
  */
