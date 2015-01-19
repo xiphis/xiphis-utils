@@ -90,6 +90,15 @@ public class AsyncPoolImpl<Resource> implements AsyncPool<Resource>, Shutdownabl
   }
 
   /**
+   * {@inheritDoc}
+   */
+  @Override
+  public int waiters()
+  {
+    return _idle.getWaiters();
+  }
+
+  /**
    *
    * @return
    */

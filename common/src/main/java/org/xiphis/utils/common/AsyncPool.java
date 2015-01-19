@@ -22,6 +22,12 @@ public interface AsyncPool<Resource> {
   int idle();
 
   /**
+   * The number of callers waiting for a resource.
+   * @return waiter count.
+   */
+  int waiters();
+
+  /**
    * Retrieve a resource from the pool.
    * @param executor Event executor.
    * @return future.
