@@ -36,6 +36,24 @@ import java.io.File;
  */
 public class TestCLIParser
 {
+  private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("win");
+
+  private StringBuilder stripCRonWindows(StringBuilder sb) {
+    if (IS_WINDOWS) {
+      for (int i = sb.length() - 1; i >= 0; i--) {
+        if (sb.charAt(i) == '\r') {
+          sb.deleteCharAt(i);
+        }
+      }
+    }
+    return sb;
+  }
+
+  private String absolutePathNoDrive(File f) {
+    String path = f.getAbsolutePath();
+    return IS_WINDOWS ? path.replaceFirst("^\\w:", "").replace('\\', '/') : path;
+  }
+
   @Test
   public void testBasic()
   {
@@ -185,7 +203,7 @@ public class TestCLIParser
                         "  -b STRING, --bar=STRING     Not much to see here.\n" +
                         "  -c INT, --ite=INT           Blah!\n" +
                         "Simple footer.\n",
-                        builder.toString());
+                        stripCRonWindows(builder).toString());
   }
 
   @CLIHeader("Simple header.")
@@ -215,7 +233,7 @@ public class TestCLIParser
                         "  -a FILE, --foo=FILE         This is a simple description.\n" +
                         "  -b STRING, --bar=STRING     Not much to see here.\n" +
                         "Simple footer.\n",
-                        builder.toString());
+                        stripCRonWindows(builder).toString());
   }
 
   @Test
@@ -229,7 +247,7 @@ public class TestCLIParser
 
     Foo2Class foo = parser.configure(new Foo2Class());
 
-    Assert.assertEquals("/bin/sh", foo.arg1.getAbsolutePath());
+    Assert.assertEquals("/bin/sh", absolutePathNoDrive(foo.arg1));
     Assert.assertEquals("world", foo.arg2);
   }
 
@@ -273,7 +291,7 @@ public class TestCLIParser
                         "  -a FILE, --foo=FILE         This is a simple description.\n" +
                         "  -b STRING, --bar=STRING     Not much to see here.\n" +
                         "Simple footer.\n",
-                        builder.toString());
+                        stripCRonWindows(builder).toString());
   }
 
   @Test
@@ -287,7 +305,7 @@ public class TestCLIParser
 
     Foo3Class foo = parser.configure(new Foo3Class());
 
-    Assert.assertEquals("/bin/sh", foo.arg1.getAbsolutePath());
+    Assert.assertEquals("/bin/sh", absolutePathNoDrive(foo.arg1));
     Assert.assertEquals("world", foo.arg2);
     Assert.assertTrue(foo.setArg1Called);
     Assert.assertTrue(foo.setArg2Called);
@@ -424,7 +442,7 @@ public class TestCLIParser
     Assert.assertEquals("Options:\n" +
                         "  -a STRING[], --foo=STRING[]\n" +
                         "                              This is a simple description.\n",
-                        builder.toString());
+                        stripCRonWindows(builder).toString());
   }
 
   public class Bar1Class implements Setable<Integer>

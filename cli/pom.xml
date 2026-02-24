@@ -13,9 +13,9 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>utils</artifactId>
-        <groupId>org.xiphis.utils</groupId>
-        <version>1.1-SNAPSHOT</version>
+        <artifactId>xiphis-utils</artifactId>
+        <groupId>net.xiphis.utils</groupId>
+        <version>1.2</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -25,7 +25,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.xiphis.utils</groupId>
+            <groupId>net.xiphis.utils</groupId>
             <artifactId>common</artifactId>
         </dependency>
         <dependency>
@@ -39,4 +39,18 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.9.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>maven-central</publishingServerId>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

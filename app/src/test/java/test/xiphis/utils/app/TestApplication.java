@@ -38,6 +38,18 @@ public class TestApplication
     BasicConfigurator.resetConfiguration();
     BasicConfigurator.configure();
   }
+  private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("win");
+
+  private StringBuilder stripCRonWindows(StringBuilder sb) {
+    if (IS_WINDOWS) {
+      for (int i = sb.length() - 1; i >= 0; i--) {
+        if (sb.charAt(i) == '\r') {
+          sb.deleteCharAt(i);
+        }
+      }
+    }
+    return sb;
+  }
 
   public static class AppModule0 implements MainModule
   {
@@ -100,7 +112,7 @@ public class TestApplication
                         "  --config=URL/FILE           Load config arguments from an alternate source\n" +
                         "  -v, --verbose               Increase verbosity\n" +
                         "  --version                   Print the version number and exit.\n",
-                        new String(bos.toByteArray(), Charset.defaultCharset()));
+                        stripCRonWindows(new StringBuilder(new String(bos.toByteArray(), Charset.defaultCharset()))).toString());
   }
 
   @Test
@@ -120,7 +132,7 @@ public class TestApplication
       System.setOut(savedOut);
     }
     Assert.assertEquals("test.xiphis.utils.app.TestApplication$AppModule0 version: 1.0-SNAPSHOT built by someone on 2014-01-01T00:00:00+00:00\n",
-                        new String(bos.toByteArray(), Charset.defaultCharset()));
+                        stripCRonWindows(new StringBuilder(new String(bos.toByteArray(), Charset.defaultCharset()))).toString());
   }
 
   public static class AppModule1 implements MainModule

@@ -39,6 +39,18 @@ public class TestModule
     BasicConfigurator.resetConfiguration();
     BasicConfigurator.configure();
   }
+  private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("win");
+
+  private StringBuilder stripCRonWindows(StringBuilder sb) {
+    if (IS_WINDOWS) {
+      for (int i = sb.length() - 1; i >= 0; i--) {
+        if (sb.charAt(i) == '\r') {
+          sb.deleteCharAt(i);
+        }
+      }
+    }
+    return sb;
+  }
 
   public class Retry implements TestRule
   {
@@ -101,41 +113,43 @@ public class TestModule
   {
     String[] args = {};
     Registry<CLIParser> registry = new Registry<>(new CLIParser(), new DefaultEventExecutorGroup(2));
-    StringBuffer stateChanges = new StringBuffer();
+    StringBuilder stateChanges = new StringBuilder();
     registry.setStateChangeListener((clazz, fromState, toState) -> {
-      stateChanges.append(String.format("[%s] %s -> %s%n", clazz.getName(), fromState, toState));
+      synchronized (stateChanges) {
+        stateChanges.append(String.format("[%s] %s -> %s%n", clazz.getName(), fromState, toState));
+      }
     });
     registry.getConfig().register(ModFoo.class);
     args = registry.getConfig().parse(args);
     Assert.assertEquals("STATE    MODULE\n" + "======== ======\n",
-                        registry.printModuleState(new StringBuilder()).toString());
+                        stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
     Future<?> initFuture = registry.init(ModFoo.class);
     Assert.assertEquals("STATE    MODULE           \n" +
                         "======== =================\n" +
                         "NEW      TestModule$ModFoo\n",
-                        registry.printModuleState(new StringBuilder()).toString());
+                        stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
     initFuture.sync();
     Assert.assertEquals("STATE    MODULE           \n" +
                         "======== =================\n" +
                         "INITED   TestModule$ModFoo\n",
-                        registry.printModuleState(new StringBuilder()).toString());
+                        stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
     Future<?> flushFuture = registry.flush(ModFoo.class);
     Assert.assertEquals("STATE    MODULE           \n" +
                         "======== =================\n" +
                         "FLUSH    TestModule$ModFoo\n",
-                        registry.printModuleState(new StringBuilder()).toString());
+                        stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
     flushFuture.sync();
     Assert.assertEquals("STATE    MODULE           \n" +
                         "======== =================\n" +
                         "RUN      TestModule$ModFoo\n",
-                        registry.printModuleState(new StringBuilder()).toString());
+                        stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
     Assert.assertEquals("[test.xiphis.utils.app.TestModule$ModFoo] UNINIT -> NEW\n" +
                         "[test.xiphis.utils.app.TestModule$ModFoo] NEW -> IDLE\n" +
                         "[test.xiphis.utils.app.TestModule$ModFoo] IDLE -> INIT\n" +
                         "[test.xiphis.utils.app.TestModule$ModFoo] INIT -> INITED\n" +
                         "[test.xiphis.utils.app.TestModule$ModFoo] INITED -> FLUSH\n" +
                         "[test.xiphis.utils.app.TestModule$ModFoo] FLUSH -> RUN\n",
-                        stateChanges.toString());
+                        stripCRonWindows(stateChanges).toString());
 
     registry.shutdown();
     registry.awaitTermination();
@@ -147,39 +161,41 @@ public class TestModule
   {
     String[] args = {};
     Registry<CLIParser> registry = new Registry<>(new CLIParser(), new DefaultEventExecutorGroup(2));
-    StringBuffer stateChanges = new StringBuffer();
+    StringBuilder stateChanges = new StringBuilder();
     registry.setStateChangeListener((clazz, fromState, toState) -> {
-      stateChanges.append(String.format("[%s] %s -> %s%n", clazz.getName(), fromState, toState));
+      synchronized (stateChanges) {
+        stateChanges.append(String.format("[%s] %s -> %s%n", clazz.getName(), fromState, toState));
+      }
     });
     registry.getConfig().register(ModFoo2.class, Registry.RECURSE);
     Assert.assertEquals(Registry.getDependencies(ModFoo2.class).size(), 1);
     args = registry.getConfig().parse(args);
     Assert.assertEquals("STATE    MODULE\n" + "======== ======\n",
-                        registry.printModuleState(new StringBuilder()).toString());
+                        stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
     Future<?> initFuture = registry.init(ModFoo2.class);
     Assert.assertEquals("STATE    MODULE            \n" +
                         "======== ==================\n" +
                         "UNINIT   TestModule$ModFoo \n" +
                         "NEW      TestModule$ModFoo2\n",
-                        registry.printModuleState(new StringBuilder()).toString());
+                        stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
     initFuture.sync();
     Assert.assertEquals("STATE    MODULE            \n" +
                         "======== ==================\n" +
                         "IDLE     TestModule$ModFoo \n" +
                         "INITED   TestModule$ModFoo2\n",
-                        registry.printModuleState(new StringBuilder()).toString());
+                        stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
     Future<?> flushFuture = registry.flush(ModFoo2.class);
     Assert.assertEquals("STATE    MODULE            \n" +
                         "======== ==================\n" +
                         "IDLE     TestModule$ModFoo \n" +
                         "FLUSH    TestModule$ModFoo2\n",
-                        registry.printModuleState(new StringBuilder()).toString());
+                        stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
     flushFuture.sync();
     Assert.assertEquals("STATE    MODULE            \n" +
                         "======== ==================\n" +
                         "RUN      TestModule$ModFoo \n" +
                         "RUN      TestModule$ModFoo2\n",
-                        registry.printModuleState(new StringBuilder()).toString());
+                        stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
     Assert.assertEquals("[test.xiphis.utils.app.TestModule$ModFoo2] UNINIT -> NEW\n" +
                         "[test.xiphis.utils.app.TestModule$ModFoo2] NEW -> IDLE\n" +
                         "[test.xiphis.utils.app.TestModule$ModFoo2] IDLE -> INIT\n" +
@@ -192,7 +208,7 @@ public class TestModule
                         "[test.xiphis.utils.app.TestModule$ModFoo] INITED -> FLUSH\n" +
                         "[test.xiphis.utils.app.TestModule$ModFoo] FLUSH -> RUN\n" +
                         "[test.xiphis.utils.app.TestModule$ModFoo2] FLUSH -> RUN\n",
-                        stateChanges.toString());
+                        stripCRonWindows(stateChanges).toString());
     registry.shutdown();
     registry.awaitTermination();
   }
@@ -203,9 +219,11 @@ public class TestModule
   {
     String[] args = {"-v"};
     Registry<CLIParser> registry = new Registry<>(new CLIParser(), new DefaultEventExecutorGroup(2));
-    StringBuffer stateChanges = new StringBuffer();
+    StringBuilder stateChanges = new StringBuilder();
     registry.setStateChangeListener((clazz, fromState, toState) -> {
-      stateChanges.append(String.format("[%s] %s -> %s%n", clazz.getName(), fromState, toState));
+      synchronized (stateChanges) {
+        stateChanges.append(String.format("[%s] %s -> %s%n", clazz.getName(), fromState, toState));
+      }
     });
     registry.getConfig().register(ModFoo3.class, Registry.RECURSE);
     Assert.assertEquals(Registry.getDependencies(ModFoo3.class).size(), 1);
@@ -213,35 +231,35 @@ public class TestModule
     Assert.assertEquals(0, args.length);
     Assert.assertEquals("STATE    MODULE\n" +
                         "======== ======\n",
-                        registry.printModuleState(new StringBuilder()).toString());
+                        stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
     Future<?> initFuture = registry.init(ModFoo3.class);
     Assert.assertEquals("STATE    MODULE            \n" +
                         "======== ==================\n" +
                         "UNINIT   TestModule$ModFoo \n" +
                         "UNINIT   TestModule$ModFoo2\n" +
                         "NEW      TestModule$ModFoo3\n",
-                        registry.printModuleState(new StringBuilder()).toString());
+                        stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
     initFuture.sync();
     Assert.assertEquals("STATE    MODULE            \n" +
                         "======== ==================\n" +
                         "UNINIT   TestModule$ModFoo \n" +
                         "IDLE     TestModule$ModFoo2\n" +
                         "INITED   TestModule$ModFoo3\n",
-                        registry.printModuleState(new StringBuilder()).toString());
+                        stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
     Future<?> flushFuture = registry.flush(ModFoo3.class);
     Assert.assertEquals("STATE    MODULE            \n" +
                         "======== ==================\n" +
                         "UNINIT   TestModule$ModFoo \n" +
                         "IDLE     TestModule$ModFoo2\n" +
                         "FLUSH    TestModule$ModFoo3\n",
-                        registry.printModuleState(new StringBuilder()).toString());
+                        stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
     flushFuture.sync();
     Assert.assertEquals("STATE    MODULE            \n" +
                         "======== ==================\n" +
                         "RUN      TestModule$ModFoo \n" +
                         "RUN      TestModule$ModFoo2\n" +
                         "RUN      TestModule$ModFoo3\n",
-                        registry.printModuleState(new StringBuilder()).toString());
+                        stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
     Assert.assertTrue(registry.getModule(ModFoo.class).getNow().verbose);
     Future<?> stopFuture = registry.stop(ModFoo.class);
     Assert.assertEquals("STATE    MODULE            \n" +
@@ -249,14 +267,14 @@ public class TestModule
                         "STOPPING TestModule$ModFoo \n" +
                         "RUN      TestModule$ModFoo2\n" +
                         "RUN      TestModule$ModFoo3\n",
-                        registry.printModuleState(new StringBuilder()).toString());
+                        stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
     stopFuture.sync();
     Assert.assertEquals("STATE    MODULE            \n" +
                         "======== ==================\n" +
                         "STOPPED  TestModule$ModFoo \n" +
                         "STOPPED  TestModule$ModFoo2\n" +
                         "STOPPED  TestModule$ModFoo3\n",
-                        registry.printModuleState(new StringBuilder()).toString());
+                        stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
 
     Assert.assertEquals("[test.xiphis.utils.app.TestModule$ModFoo3] UNINIT -> NEW\n" +
                         "[test.xiphis.utils.app.TestModule$ModFoo3] NEW -> IDLE\n" +
@@ -282,7 +300,7 @@ public class TestModule
                         "[test.xiphis.utils.app.TestModule$ModFoo3] STOPPING -> STOPPED\n" +
                         "[test.xiphis.utils.app.TestModule$ModFoo2] STOPPING -> STOPPED\n" +
                         "[test.xiphis.utils.app.TestModule$ModFoo] STOPPING -> STOPPED\n",
-                        stateChanges.toString());
+                        stripCRonWindows(stateChanges).toString());
     registry.shutdown();
     registry.awaitTermination();
   }
@@ -293,9 +311,11 @@ public class TestModule
     {
       String[] args = {"-v"};
       Registry<CLIParser> registry = new Registry<>(new CLIParser(), new DefaultEventExecutorGroup(2));
-      StringBuffer stateChanges = new StringBuffer();
+      StringBuilder stateChanges = new StringBuilder();
       registry.setStateChangeListener((clazz, fromState, toState) -> {
+        synchronized (stateChanges) {
           stateChanges.append(String.format("[%s] %s -> %s%n", clazz.getName(), fromState, toState));
+        }
       });
       registry.getConfig().register(ModFoo3.class, Registry.RECURSE);
       Assert.assertEquals(Registry.getDependencies(ModFoo3.class).size(), 1);
@@ -303,35 +323,35 @@ public class TestModule
       Assert.assertEquals(0, args.length);
       Assert.assertEquals("STATE    MODULE\n" +
                       "======== ======\n",
-              registry.printModuleState(new StringBuilder()).toString());
+              stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
       Future<?> initFuture = registry.init(ModFoo3.class);
       Assert.assertEquals("STATE    MODULE            \n" +
                       "======== ==================\n" +
                       "UNINIT   TestModule$ModFoo \n" +
                       "UNINIT   TestModule$ModFoo2\n" +
                       "NEW      TestModule$ModFoo3\n",
-              registry.printModuleState(new StringBuilder()).toString());
+              stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
       initFuture.sync();
       Assert.assertEquals("STATE    MODULE            \n" +
                       "======== ==================\n" +
                       "UNINIT   TestModule$ModFoo \n" +
                       "IDLE     TestModule$ModFoo2\n" +
                       "INITED   TestModule$ModFoo3\n",
-              registry.printModuleState(new StringBuilder()).toString());
+              stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
       Future<?> flushFuture = registry.flush(ModFoo3.class);
       Assert.assertEquals("STATE    MODULE            \n" +
                       "======== ==================\n" +
                       "UNINIT   TestModule$ModFoo \n" +
                       "IDLE     TestModule$ModFoo2\n" +
                       "FLUSH    TestModule$ModFoo3\n",
-              registry.printModuleState(new StringBuilder()).toString());
+              stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
       flushFuture.sync();
       Assert.assertEquals("STATE    MODULE            \n" +
                       "======== ==================\n" +
                       "RUN      TestModule$ModFoo \n" +
                       "RUN      TestModule$ModFoo2\n" +
                       "RUN      TestModule$ModFoo3\n",
-              registry.printModuleState(new StringBuilder()).toString());
+              stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
       Assert.assertTrue(registry.getModule(ModFoo.class).getNow().verbose);
       Future<?> pauseFuture = registry.flush(ModFoo.class);
       Assert.assertEquals("STATE    MODULE            \n" +
@@ -339,35 +359,35 @@ public class TestModule
               "PAUSE    TestModule$ModFoo \n" +
               "RUN      TestModule$ModFoo2\n" +
               "RUN      TestModule$ModFoo3\n",
-          registry.printModuleState(new StringBuilder()).toString());
+          stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
       pauseFuture.sync();
       Assert.assertEquals("STATE    MODULE            \n" +
               "======== ==================\n" +
               "RUN      TestModule$ModFoo \n" +
               "INITED   TestModule$ModFoo2\n" +
               "FLUSH    TestModule$ModFoo3\n",
-          registry.printModuleState(new StringBuilder()).toString());
+          stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
       Thread.sleep(100);
       Assert.assertEquals("STATE    MODULE            \n" +
               "======== ==================\n" +
               "RUN      TestModule$ModFoo \n" +
               "RUN      TestModule$ModFoo2\n" +
               "RUN      TestModule$ModFoo3\n",
-          registry.printModuleState(new StringBuilder()).toString());
+          stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
       Future<?> stopFuture = registry.stop(ModFoo.class);
       Assert.assertEquals("STATE    MODULE            \n" +
               "======== ==================\n" +
               "STOPPING TestModule$ModFoo \n" +
               "RUN      TestModule$ModFoo2\n" +
               "RUN      TestModule$ModFoo3\n",
-          registry.printModuleState(new StringBuilder()).toString());
+          stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
       stopFuture.sync();
       Assert.assertEquals("STATE    MODULE            \n" +
                       "======== ==================\n" +
                       "STOPPED  TestModule$ModFoo \n" +
                       "STOPPED  TestModule$ModFoo2\n" +
                       "STOPPED  TestModule$ModFoo3\n",
-              registry.printModuleState(new StringBuilder()).toString());
+              stripCRonWindows(registry.printModuleState(new StringBuilder())).toString());
 
       Assert.assertEquals("[test.xiphis.utils.app.TestModule$ModFoo3] UNINIT -> NEW\n" +
                       "[test.xiphis.utils.app.TestModule$ModFoo3] NEW -> IDLE\n" +
@@ -405,7 +425,7 @@ public class TestModule
                       "[test.xiphis.utils.app.TestModule$ModFoo3] STOPPING -> STOPPED\n" +
                       "[test.xiphis.utils.app.TestModule$ModFoo2] STOPPING -> STOPPED\n" +
                       "[test.xiphis.utils.app.TestModule$ModFoo] STOPPING -> STOPPED\n",
-              stateChanges.toString());
+              stripCRonWindows(stateChanges).toString());
       registry.shutdown();
       registry.awaitTermination();
     }
