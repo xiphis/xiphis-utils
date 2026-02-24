@@ -72,7 +72,7 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>net-.xiphis.utils</groupId>
+                <groupId>net.xiphis.utils</groupId>
                 <artifactId>var</artifactId>
                 <version>${project.version}</version>
             </dependency>
